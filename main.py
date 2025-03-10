@@ -3,10 +3,10 @@ from PIL import Image
 from ProcessMemoryContent import ProcessMemoryContent
 
 pmc = ProcessMemoryContent(raw_data_folder=r"images\\dataset_sample",
-                            processed_folder=r"data\\processed",
+                            processed_folder=r"data\\processed")
                             ## pass these if using memex dataset photos
-                            is_training_data=True,
-                            json_data_file_path=r"dataset\\photo_info.json")
+                            # is_training_data=True,
+                            # json_data_file_path=r"dataset\\photo_info.json")
 pmc.process()
 
 # from transformers import BlipProcessor, BlipForConditionalGeneration
