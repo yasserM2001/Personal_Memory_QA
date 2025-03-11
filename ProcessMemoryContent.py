@@ -352,7 +352,8 @@ class ProcessMemoryContent():
                 memory['content'] = content
 
     def _save(self, save_data, save_path):
-        with open(save_path, 'w') as f:
+        # with open(save_path, 'w') as f:
+        with open(save_path, 'w', encoding='utf-8') as f:
             json.dump(save_data, f, indent=4, ensure_ascii=False)
 
     def process(self):
@@ -385,7 +386,8 @@ class ProcessMemoryContent():
         if not os.path.exists(memory_cotent_processed_path):
             self.memory_content_processed = self.identical_memory_list.copy()
         else:
-            with open(memory_cotent_processed_path, 'r') as f:
+            # with open(memory_cotent_processed_path, 'r') as f:
+            with open(memory_cotent_processed_path, 'r', encoding='utf-8') as f:
                 self.memory_content_processed = json.load(f)
 
         try:
