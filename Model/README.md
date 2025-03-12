@@ -22,7 +22,7 @@ A question-answering system for personal memories that utilizes metadata extract
 1. **Clone the repository**
     ```bash
     git clone https://github.com/yasserM2001/Personal_Memory_QA.git
-    cd Personal_Memory_QA
+    cd Personal_Memory_QA/Model
     ```
 
 2. **Install the required dependencies**
@@ -49,7 +49,7 @@ A question-answering system for personal memories that utilizes metadata extract
       ```
 
 4. **Set up the environment variables**
-    - Create a new file named `.env` in the root directory of the project.
+    - Create a new file named `.env` in the Model directory of the project.
     - Add your OpenAI API key to the `.env` file as follows:
       ```bash
       OPENAI_API_KEY=your_openai_api_key_here
@@ -61,7 +61,7 @@ A question-answering system for personal memories that utilizes metadata extract
 
 ## Usage
 
-After setting up the project, you can run the application using:
+After setting up the project, you can run the application from Model directory using:
 ```bash
 python main.py
 ```
