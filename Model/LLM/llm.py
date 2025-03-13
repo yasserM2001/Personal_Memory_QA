@@ -179,4 +179,16 @@ class OpenAIWrapper(LLMWrapper):
         result = json.loads(result)
 
         return result, cost
+    
+    def chunking_text(self, text):
+        system_prompt = "Given a long text, chunk the text into smaller segments. Output the list of chunks in a JSON object with the key 'chunks'."
+        user_prompt = f"Text: {text}"
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        response, result, cost = self._call_api(messages, json_mode=True)
+        return result, cost
+
+    def calculate_embeddings(self, text, model="text-embedding-3-small"):
+        if text == "":
+            return None
+        return self.llm.embeddings.create(input = [text], model=model).data[0].embedding
  

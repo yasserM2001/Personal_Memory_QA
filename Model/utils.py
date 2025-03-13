@@ -57,3 +57,53 @@ def get_data_of_photo(photo_name, photo_folder, json_data, extension='jpg'):
     photo_data = json_data.get(photo_name)
     
     return photo_data
+
+def count_words(text):
+    words = re.split(r'[ \n,.!?():"/;]+', text)
+    word_count = len([word for word in words if word])
+    
+    return word_count
+
+####################################################################################
+
+def parse_memory_to_string(memory: dict) -> str:
+    filename = memory['filename']
+
+    capture_method = memory['metadata']['capture_method']
+
+    temporal = memory['metadata']['temporal_info']
+    date_string = temporal['date_string']
+    day_of_week = temporal['day_of_week']
+    time_of_the_day = temporal['time_of_the_day']
+    temporal_info = f'{date_string}, {day_of_week}, {time_of_the_day}'
+
+    location = memory['metadata']['location']
+    address = location.get('address', 'Unknown')
+
+    content = memory['content']
+
+    caption = content.get('caption', '')
+    objects = content.get('objects', [])
+    people = content.get('people', [])
+    activities = content.get('activities', [])
+    text = content.get('text', '')
+    speech = content.get('speech', '')
+
+    word_count = count_words(text)
+    text_in_prompt = text if word_count < 100 else ""
+
+    memory_string = f'''
+memory_id: {filename}
+capture method: {capture_method}
+temporal info: {temporal_info}
+location: {address}
+
+Content: 
+caption: {caption}
+visible objects: {objects}
+visible people: {people}
+visible text: {text_in_prompt}
+heard speech: {speech}
+inferred activities: {activities}\n\n'''
+    return memory_string
+
