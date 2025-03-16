@@ -189,7 +189,7 @@ class MetadataExtractor:
           gps_longitude = metadata[0].get('Composite:GPSLongitude', None)
           gps = (gps_latitude, gps_longitude)
           geolocator = Nominatim(user_agent="omniquery")
-          location = geolocator.reverse(f"{gps_latitude}, {gps_longitude}")
+          location = geolocator.reverse(f"{gps_latitude}, {gps_longitude}", language='en')
           address = location.address
           address_split = address.split(', ')
           address_split.reverse()
@@ -279,7 +279,7 @@ class MetadataExtractor:
         gps = (latitude, longitude)
         # Getting address
         geolocator = Nominatim(user_agent="omniquery")
-        location = geolocator.reverse(f"{latitude}, {longitude}")
+        location = geolocator.reverse(f"{latitude}, {longitude}" , language='en')
         address = location.address
         address_split = address.split(', ')
         address_split.reverse()
