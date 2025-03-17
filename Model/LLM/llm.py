@@ -219,4 +219,14 @@ class OpenAIWrapper(LLMWrapper):
             result = json.loads(result)
 
         return result, cost
- 
+    
+    def query_rag(self, query, memory_prompt):
+        system_prompt = self.templates['prompt_query_rag']
+
+        user_prompt = f"Query: {query}\n"
+        user_prompt += memory_prompt
+
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        response, result, cost = self._call_api(messages, json_mode=True)
+        result = json.loads(result)
+        return response, result, cost

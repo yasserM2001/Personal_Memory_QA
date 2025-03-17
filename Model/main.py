@@ -1,6 +1,5 @@
-from ProcessMemoryContent import ProcessMemoryContent
-from augment import AugmentContext
 from memory import Memory
+from Query.query import QueryHandler
 
 
 # pass these if using memex dataset photos
@@ -10,3 +9,10 @@ memory = Memory(raw_folder="images", processed_folder=r"data\\processed")
 
 memory.preprocess()
 memory.augment()
+
+
+query = QueryHandler(memory, debug=True)
+
+res = query.query_rag("When did i go to the beach?")
+
+print(res)
