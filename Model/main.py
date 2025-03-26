@@ -1,5 +1,6 @@
 from memory import Memory
 from Query.query import QueryHandler
+import json
 
 
 # pass these if using memex dataset photos
@@ -13,6 +14,7 @@ memory.augment()
 
 query = QueryHandler(memory, debug=True)
 
-res = query.query_rag("When did i go to the beach?")
+result = query.query_memory("When did i go to the beach?")
 
-print(res)
+print("Result : ")
+print(json.dumps(result, indent=4, ensure_ascii=False))

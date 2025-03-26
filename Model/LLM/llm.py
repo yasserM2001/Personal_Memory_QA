@@ -230,3 +230,37 @@ class OpenAIWrapper(LLMWrapper):
         response, result, cost = self._call_api(messages, json_mode=True)
         result = json.loads(result)
         return response, result, cost
+    
+    def augment_query(self, query, today):
+        system_prompt = self.templates['prompt_augment_query']
+
+        user_prompt = f"Query: {query}, Today: {today}"
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        response, result, cost = self._call_api(messages, json_mode=True)
+        result = json.loads(result)
+        return result, cost
+    
+    def filter_related_composite_context(self, query, composite_context):
+        system_prompt = self.templates['prompt_filter_related_composite_context']
+
+        user_prompt = ""
+        for context in composite_context:
+            event_name = context['event_name']
+            context_str = f"event_name: '{event_name}'\n"
+            user_prompt += context_str
+
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        response, result, cost = self._call_api(messages, json_mode=True)
+        result = json.loads(result)
+        return result, cost
+    
+    def query_memory(self, query, memory_prompt):
+        system_prompt = self.templates['prompt_query_memory']
+
+        user_prompt = f"Query: {query}\n"
+        user_prompt += memory_prompt
+
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        response, result, cost = self._call_api(messages, json_mode=True)
+        result = json.loads(result)
+        return response, result, cost
