@@ -35,8 +35,6 @@ class AugmentContext():
 
         self.debug = debug
 
-        self.augment()
-
     def update_vector_db_and_list(self, category, new_element, memory_id):
         print("*"*50)
         print(f"Category : {category}")
