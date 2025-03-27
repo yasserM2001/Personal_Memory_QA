@@ -35,3 +35,5 @@ Thumbs.db
 
 # Ignore environment files
 .env
+
+test.py

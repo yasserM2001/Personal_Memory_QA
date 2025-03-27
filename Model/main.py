@@ -15,6 +15,8 @@ memory.augment()
 query = QueryHandler(memory, debug=True)
 
 result = query.query_memory("When did i go to the beach?")
+# or 
+# result = query.query_rag("When did i go to the beach?")
 
 print("Result : ")
 print(json.dumps(result, indent=4, ensure_ascii=False))
