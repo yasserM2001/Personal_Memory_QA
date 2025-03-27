@@ -13,9 +13,13 @@ class AugmentContext():
     def __init__(
             self,
             memory_content_processed: list,
+            processed_folder=r"data\\processed", 
+            vector_db_folder=r"data\\vector_db", 
             debug = False,
     ) -> None:
         self.memory_content_processed = memory_content_processed
+        self.processed_folder = processed_folder
+        self.vector_db_folder = vector_db_folder
 
         self.composite_context = []
         self.composite_context_embeddings = None
@@ -107,16 +111,16 @@ class AugmentContext():
         # TODO 
         # merge similar object / people / activities and save them in a vector database
 
-        if not os.path.exists('data/vector_db'):
-            os.makedirs('data/vector_db')
+        if not os.path.exists(self.vector_db_folder):
+            os.makedirs(self.vector_db_folder)
 
-        objects_vector_db_path = 'data/vector_db/objects_vector_db.npy'
-        people_vector_db_path = 'data/vector_db/people_vector_db.npy'
-        activities_vector_db_path = 'data/vector_db/activities_vector_db.npy'
+        objects_vector_db_path = os.path.join(self.vector_db_folder,'objects_vector_db.npy')
+        people_vector_db_path = os.path.join(self.vector_db_folder,'people_vector_db.npy')
+        activities_vector_db_path = os.path.join(self.vector_db_folder,'activities_vector_db.npy')
 
-        objects_list_path = 'data/vector_db/objects_list.json'
-        people_list_path = 'data/vector_db/people_list.json'
-        activities_list_path = 'data/vector_db/activities_list.json'
+        objects_list_path = os.path.join(self.vector_db_folder,'objects_list.json')
+        people_list_path = os.path.join(self.vector_db_folder,'people_list.json')
+        activities_list_path = os.path.join(self.vector_db_folder,'activities_list.json')
 
         if os.path.exists(objects_vector_db_path):
             self.objects_vector = np.load(objects_vector_db_path)
@@ -178,8 +182,8 @@ class AugmentContext():
             json.dump(self.activities_list, f, indent=4)
 
     def augment_location(self):
-        location_vector_db_path = 'data/vector_db/location_vector_db.npy'
-        location_list_path = 'data/vector_db/location_list.json'
+        location_vector_db_path = os.path.join(self.vector_db_folder,'location_vector_db.npy')
+        location_list_path = os.path.join(self.vector_db_folder,'location_list.json')
 
         if os.path.exists(location_vector_db_path):
             self.location_vector_db = np.load(location_vector_db_path)
@@ -225,11 +229,11 @@ class AugmentContext():
             json.dump(self.location_list, f, indent=4)
     
     def augment_text_and_speech(self):
-        if not os.path.exists('data/vector_db'):
-            os.makedirs('data/vector_db')
+        if not os.path.exists(self.vector_db_folder):
+            os.makedirs(self.vector_db_folder)
         
-        text_vector_db_path = 'data/vector_db/text_vector_db.npy'
-        text_list_path = 'data/vector_db/text_list.json'
+        text_vector_db_path = os.path.join(self.vector_db_folder,'text_vector_db.npy')
+        text_list_path = os.path.join(self.vector_db_folder,'text_list.json')
 
         if os.path.exists(text_vector_db_path):
             self.text_vector_db = np.load(text_vector_db_path)
@@ -288,8 +292,8 @@ class AugmentContext():
 
     def generate_caption_vector_db(self):
 
-        save_path_vector_db = 'data/vector_db/caption_vector_db.npy'
-        save_path_list = 'data/vector_db/caption_list.json'
+        save_path_vector_db = os.path.join(self.vector_db_folder,'caption_vector_db.npy')
+        save_path_list = os.path.join(self.vector_db_folder,'caption_list.json')
 
         if os.path.exists(save_path_vector_db):
             self.caption_vector_db = np.load(save_path_vector_db)
@@ -432,10 +436,10 @@ class AugmentContext():
 
         memory_batch = []
 
-        composite_vector_db_path = 'data/vector_db/composite_vector_db.npy'
-        composite_list_path = 'data/vector_db/composite_list.json'
-        knowledge_vector_db_path = 'data/vector_db/knowledge_vector_db.npy'
-        knowledge_list_path = 'data/vector_db/knowledge_list.json'
+        composite_vector_db_path = os.path.join(self.vector_db_folder,'composite_vector_db.npy')
+        composite_list_path = os.path.join(self.vector_db_folder,'composite_list.json')
+        knowledge_vector_db_path = os.path.join(self.vector_db_folder,'knowledge_vector_db.npy')
+        knowledge_list_path = os.path.join(self.vector_db_folder,'knowledge_list.json')
 
         if os.path.exists(composite_vector_db_path):
             self.composite_context_embeddings = np.load(composite_vector_db_path)
@@ -482,8 +486,8 @@ class AugmentContext():
      
     def generate_vector_db_for_rag(self):
 
-        save_path_vector_db = 'data/vector_db/vector_db_rag.npy'
-        save_path_list = 'data/vector_db/vector_db_list.json'
+        save_path_vector_db = os.path.join(self.vector_db_folder,'vector_db_rag.npy')
+        save_path_list = os.path.join(self.vector_db_folder,'vector_db_list.json')
 
         if os.path.exists(save_path_vector_db):
             self.vector_db_rag = np.load(save_path_vector_db)

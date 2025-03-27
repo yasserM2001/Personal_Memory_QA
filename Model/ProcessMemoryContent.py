@@ -261,9 +261,7 @@ class ProcessMemoryContent():
     
     # stores the filtered unique media.
     def filter_identical_memory(self, debug=False):
-        ###################
         self.debug = debug
-        ###################
 
         identical_memory_list = []
         
@@ -288,9 +286,9 @@ class ProcessMemoryContent():
         self.identical_memory_list = identical_memory_list
 
         # check if the folder exist
-        if not os.path.exists('data/processed'):
-            os.makedirs('data/processed')
-        file_path = 'data/processed/identical_memory_list.json'
+        if not os.path.exists(self.processed_folder):
+            os.makedirs(self.processed_folder)
+        file_path = os.path.join(self.processed_folder, 'identical_memory_list.json')
         # with open(file_path, 'w') as f:
         #     json.dump(identical_memory_list, f, indent=4)
         with open(file_path, 'w', encoding='utf-8') as f:
