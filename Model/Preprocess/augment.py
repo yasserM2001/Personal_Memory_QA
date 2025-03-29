@@ -36,10 +36,6 @@ class AugmentContext():
         self.debug = debug
 
     def update_vector_db_and_list(self, category, new_element, memory_id):
-        print("*"*50)
-        print(f"Category : {category}")
-        print(f"New Element : {new_element}")
-        print(f"ID : {memory_id}")
         new_emb = self.llm.calculate_embeddings(new_element)
         if new_emb is None:
             return

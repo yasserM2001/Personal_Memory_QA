@@ -49,7 +49,6 @@ def get_data_of_photo(photo_name, photo_folder, json_data, extension='jpg'):
     """
     # Construct the photo file path
     photo_path = os.path.normpath(os.path.join(photo_folder, f"{photo_name}.{extension}"))
-    print(photo_path)
     
     # Check if the photo exists
     if not os.path.exists(photo_path):

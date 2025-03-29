@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from memory import Memory
+from Preprocess.memory import Memory
 from Query.query import QueryHandler
 import shutil
 import os

@@ -1,5 +1,5 @@
-from ProcessMemoryContent import ProcessMemoryContent
-from augment import AugmentContext
+from .ProcessMemoryContent import ProcessMemoryContent
+from .augment import AugmentContext
 import os
 import json
 import numpy as np

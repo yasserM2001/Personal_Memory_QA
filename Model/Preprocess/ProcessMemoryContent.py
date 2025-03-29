@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # For videos
 import cv2
 
-from metadata_extractor import MetadataExtractor
+from .metadata_extractor import MetadataExtractor
 from utils import read_json_file, get_data_of_photo
 from ocr import OCR
 from LLM.llm import OpenAIWrapper

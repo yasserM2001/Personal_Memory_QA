@@ -36,4 +36,6 @@ Thumbs.db
 # Ignore environment files
 .env
 
-test.py
+user_photos/
+results/
+uploaded_images/

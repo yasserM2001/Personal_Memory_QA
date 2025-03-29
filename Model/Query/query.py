@@ -1,7 +1,7 @@
 import numpy as np
-from memory import Memory
+from Preprocess.memory import Memory
 from LLM.llm import OpenAIWrapper
-import time , json
+import time 
 from Query.query_augment import QueryAugmentation
 from datetime import datetime
 from utils import parse_memory_to_string, parse_composite_context_to_string, parse_knowledge_to_string
@@ -98,8 +98,8 @@ class QueryHandler():
         print("Query augmentation time cost: ", time_cost)
 
         augmented_query = augmented_query['augmented_query']
-        print("Augmented Query : ")
-        print(json.dumps(augmented_query, indent=4, ensure_ascii=False))
+        # print("Augmented Query : ")
+        # print(json.dumps(augmented_query, indent=4, ensure_ascii=False))
 
         start_date = augmented_query['start_date']
         end_date = augmented_query['end_date']
@@ -183,8 +183,8 @@ class QueryHandler():
 
         # generate prompt
         final_prompt = self.generate_prompt(memories_final, all_related_composite, filtered_knowledge)
-        print("Final Prompt : ")
-        print(final_prompt)
+        # print("Final Prompt : ")
+        # print(final_prompt)
 
         time_cost = time.time() - start_time
         print("Memory filtering time cost: ", time_cost)
@@ -234,7 +234,7 @@ class QueryHandler():
 
         top_k_context = np.argsort(similarities)[-composite_topk:][::-1]
         retrieved_composite_context = [self.composite_context[i] for i in top_k_context]
-        print(retrieved_composite_context)
+        # print(retrieved_composite_context)
         # rerank only the related memory using LLM
         # for conposite_context in retrieved_composite_context:
         result, cost = self.llm.filter_related_composite_context(query, retrieved_composite_context)
