@@ -9,7 +9,7 @@ from paddleocr import PaddleOCR
 class OCR:
     def __init__(self, confidence_threshold=0.85, debug=False):
         # Initialize the PaddleOCR model
-        self.model = PaddleOCR(use_angle_cls=True, lang='en')
+        self.model = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
         self.confidence_threshold = confidence_threshold
         self.debug = debug
 
@@ -28,7 +28,7 @@ class OCR:
                     confidence = word[1][1]  # Confidence score
                     bounding_box = word[0]  # Bounding box coordinates
 
-                    print(f"Text: {text}, Confidence: {confidence}")
+                    # print(f"Text: {text}, Confidence: {confidence}")
                     if confidence >= self.confidence_threshold:
                         # vertices of box
                         vertices = [
