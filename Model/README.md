@@ -1,70 +1,95 @@
-# Personal Memory QA
+# Model Component - Personal Memory QA  
 
-A question-answering system for personal memories that utilizes metadata extraction and natural language processing to answer questions about your personal history and experiences.
+This module handles **metadata extraction, query processing, and LLM-based question answering** for the **Personal Memory QA** system.  
 
-## Features
+## Project Structure  
 
-- Extract metadata from personal files (images, videos)
-- Natural language processing for question understanding
-- Context-based answer generation
+```plaintext
+Model/
+│── data/                 # Stores outout of preprocessing processed data & vector database
+│   ├── processed/        # Preprocessed extracted metadata
+│   ├── vector_db/        # Stores vectorized embeddings for search
+│── LLM/                  # Large Language Model (LLM) integration
+│   ├── llm.py            # Main LLM interaction logic
+│   └── prompt_templates.py  # Predefined prompts for better query handling
+│── Preprocess/           # Data preprocessing components
+│   ├── augment.py        # Augmentation techniques for better memory representation
+│   ├── memory.py         # Processes and structures memory data
+│   ├── metadata_extractor.py  # Extracts metadata (timestamps, location, capture method)
+│   └── ProcessMemoryContent.py  # Converts media into structured memory representations
+│── Query/                # Query processing logic
+│   ├── query.py          # Core logic for answering user queries
+│   └── query_augment.py  # Enhances queries using context from extracted metadata
+│── Testing_Dataset/      # Scripts for dataset-based testing (Memex Dataset)
+│   ├── downloader.py     # Dowloads sample images for users from Memex dataset for testing
+│   └── processor.py      # Processes test datasets and get users photos and questions
+│── api.py                # FastAPI-based API to serve the model
+│── main.py               # Entry point to try the model service
+│── ocr.py                # OCR-based text extraction from images
+│── requirements.txt      # Dependencies for the model
+│── test_api.py           # API endpoint testing
+│── tester.py             # Running code on Memex dataset
+│── utils.py              # Helper functions
+│── README.md             # (This file)
+```
 
-## Installation
+---
 
-### Prerequisites
+## How to Run the Model  
 
-- Python 3.8 or higher
-- Git
-- OpenAI API key
-- ExifTool (for metadata extraction)
+You can run the model in different modes depending on your needs.  
 
-### Setup Instructions
+### (1️) **Run as an API Server**  
 
-1. **Clone the repository**
-    ```bash
-    git clone https://github.com/yasserM2001/Personal_Memory_QA.git
-    cd Personal_Memory_QA/Model
-    ```
+This will start a FastAPI server to handle queries.  
 
-2. **Install the required dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3. **Install ExifTool for extracting metadata from media**
-
-    #### Windows Installation:
-    - Download ExifTool from [exiftool.org](https://exiftool.org/).
-    - Unzip the downloaded file.
-    - Rename `exiftool(-k).exe` to `exiftool.exe`.
-    - Add ExifTool to the system PATH:
-        1. Open the Start Menu and search for "Edit the system environment variables".
-        2. In the System Properties window, click on the "Environment Variables" button.
-        3. Under "System variables", find the `Path` variable and click "Edit".
-        4. Click "New" and add the path to the directory where `exiftool.exe` is located (e.g., `C:\Tools\ExifTool`).
-        5. Click "OK" to save the changes.
-    - Verify installation with:
-    
-      ```bash
-      exiftool -ver
-      ```
-
-4. **Set up the environment variables**
-    - Create a new file named `.env` in the Model directory of the project.
-    - Add your OpenAI API key to the `.env` file as follows:
-      ```bash
-      OPENAI_API_KEY=your_openai_api_key_here
-      ```
-
-5. **Prepare your media files**
-    - Create a folder named `images` inside the project directory.
-    - Place all images that need to be processed inside this folder.
-
-## Usage
-
-After setting up the project, you can run the application from Model directory using:
 ```bash
+cd Model
+uvicorn api:app --reload
+```
+---
+
+### (2️) **Run for Direct Question Answering**  
+
+- Create a folder named `images` inside the `Model` directory.
+- Place all images that need to be processed inside this folder.
+
+If you want to interact with the model **without starting an API**, use:  
+
+```bash
+cd Model
 python main.py
 ```
 
-This will start the system, allowing you to process images and ask questions based on the extracted metadata.
+---
+
+## How to Test the Model  
+
+### **Test API Endpoints**  
+
+Run API tests to verify functionality:  
+
+```bash
+python test_api.py
+```
+
+### **Test on Memex Dataset**  
+
+To test on dataset make sure `dataset\all_users_photos.json` and `dataset/all_users_questions.json` exists if not use `Testing_Dataset/processor.py` to generate them:  
+
+```bash
+python tester.py
+```
+
+---
+
+## Notes  
+
+- Ensure `OPENAI_API_KEY` is set in `.env` before running LLM queries.  
+- You can adjust prompt settings in **LLM/prompt_templates.py** for better responses.  
+- The model uses **vector-based search** stored in `data/vector_db/`.  
+
+---
+
+This README provides a complete guide to understanding and using the model component effectively.
 
