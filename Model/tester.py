@@ -167,8 +167,25 @@ if __name__ == '__main__':
         try:
             # 1. Download photos
             print("\n[1/3] Downloading photos...")
-            downloader.download_user_photos(user_id, all_photos_data)
+            expected_photos = len(all_photos_data[user_id])
+            
+            max_retries = 3
+            downloaded_count = 0
+
+            for attempt in range(max_retries):
+                downloaded_count = downloader.download_user_photos(user_id, all_photos_data)
+                
+                if downloaded_count == expected_photos:
+                    break  # Exit retry loop if successful
+                else:
+                    print(f"Retrying... (Downloaded {downloaded_count}, expected {expected_photos})")
+
+            # Final verification (assert if still mismatched after retries)
+            assert downloaded_count == expected_photos, \
+                f"Failed after {max_retries} attempts. Downloaded {downloaded_count}, expected {expected_photos}"
+            
             print("[1/3] DONE")
+
             # 2. Initialize memory system
             memory = Memory(
                 raw_folder=os.path.join("user_photos", safe_user_id),

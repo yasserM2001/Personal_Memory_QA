@@ -42,7 +42,7 @@ class PhotoDownloader:
 
         if not photos_to_download:
             print(f"All {len(photo_entries)} photos already exist for user {user_id}")
-            return
+            return len(photo_entries)
             
         print(f"Downloading {len(photos_to_download)}/{len(photo_entries)} photos for user {user_id} to {download_dir}")
         
@@ -55,6 +55,8 @@ class PhotoDownloader:
         successful = sum(1 for result in results if result)
         print(f"\nDownload complete! {successful}/{len(photos_to_download)} new photos downloaded successfully")
         print(f"Total photos now available: {len(existing_files) + successful}")
+        
+        return len(existing_files) + successful
 
     def _get_existing_photos(self, download_dir: str) -> set[str]:
         """Get set of already downloaded photo IDs (without extensions)"""
