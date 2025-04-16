@@ -66,9 +66,10 @@ class FaceGrouper:
         
         if os.path.exists(group_to_images_path):
             with open(group_to_images_path, "r") as f:
-                self.group_to_images = json.load(f)
-            print(f"Loaded group to images from {group_to_images_path}")
-    
+                data = json.load(f)
+                self.group_to_images = {k: set(v) for k, v in data.items()}
+            print(f"Loaded group to images mapping from {group_to_images_path}")
+
     def group_faces(self):
         if self.group_faces and self.faces_embeddings and self.group_to_images:
             print("Faces already grouped.")
