@@ -15,25 +15,25 @@ EMBEDDINGS_FILE = "embeddings.pkl"
 GROUP_TO_IMAGES_FILE = "group_to_images.json"
 
 class FaceGrouper:
-    def __init__(self, face_to_image_map, 
+    def __init__(self, face_to_image_map=None, 
                  face_folder="extracted_faces", 
                  output_folder="grouped_faces", 
                  images_folder="images",
                  detection_faces=None):
         
-        if detection_faces is None:
-            detection_faces = []
-            for filename in os.listdir(face_folder):
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    detection_faces.append(filename)
-        
-        self.face_to_image_map = face_to_image_map if face_to_image_map else {}
-
-        self.detection_faces = detection_faces
         self.face_folder = face_folder
         self.output_folder = output_folder
         self.images_folder = images_folder
         os.makedirs(self.output_folder, exist_ok=True)
+
+        if detection_faces is None:
+            detection_faces = [
+                f for f in os.listdir(face_folder)
+                if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            ]
+        self.detection_faces = detection_faces
+        
+        self.face_to_image_map = face_to_image_map if face_to_image_map else {}
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = InceptionResnetV1(pretrained='vggface2').eval().to(self.device)
@@ -73,6 +73,10 @@ class FaceGrouper:
     def group_faces(self):
         if self.group_faces and self.faces_embeddings and self.group_to_images:
             print("Faces already grouped.")
+            return
+        
+        if self.face_to_image_map is None:
+            print("No face to image mapping found. Cannot group faces.")
             return
         
         group_id_counter = 0
@@ -139,12 +143,11 @@ class FaceGrouper:
                 self.group_to_images[new_group_name] = self.group_to_images.pop(old_group_name)
                 
             print(f"Group name changed from {old_group_name} to {new_group_name}.")
+            return True
         else:
             print(f"Group {old_group_name} does not exist.")
+            return False
     
-        self.save_group_data()
-        self.save_embeddings_data()
-
     def save_group_data(self):
         output_json_path = os.path.join(self.output_folder, JSON_FILE)
         with open(output_json_path, "w") as f:
@@ -167,6 +170,8 @@ class FaceGrouper:
         self.save_group_data()
         self.save_embeddings_data() 
         self.save_group_to_images()
+        # Update the modification time of the output folder
+        os.utime(self.output_folder, None)
         print("All data saved.")
 
     def show_grouped_faces(self, group_id):

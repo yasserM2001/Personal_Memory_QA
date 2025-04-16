@@ -7,13 +7,16 @@ from facenet_pytorch import MTCNN
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
-
+import shutil
 
 class FaceProcessor:
-    def __init__(self, directory="extracted_faces") -> None:
+    def __init__(self, directory="extracted_faces", output_folder="grouped_faces") -> None:
         self.directory = directory
+        self.output_folder = output_folder
+
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.mtcnn = MTCNN(keep_all=True, device=self.device)
+        self.face_grouper = None
 
     def show_extracted_faces(self, faces, title="Extracted Faces"):
         num_faces = len(faces)
@@ -37,7 +40,7 @@ class FaceProcessor:
     def extract_faces(self, image_path, confidence_threshold=0.9, count=0):
         os.makedirs(self.directory, exist_ok=True)
 
-        image = Image.open(image_path)
+        image = Image.open(image_path).convert("RGB")
         boxes, probs = self.mtcnn.detect(image)
         face_images = []
         if boxes is not None:
@@ -94,25 +97,57 @@ class FaceProcessor:
 
         print(f"Extracted {len(face_images)} faces from {len(os.listdir(images_root_path))} images.")
         return face_images, face_to_image_map
+    
+    def process_and_group_faces(self, images_root_path, confidence_threshold=0.9):
+        UP_TO_DATE_FLAG = False
 
+        if os.path.exists(self.output_folder):
+            images_time = os.path.getmtime(images_root_path)
+            output_time = os.path.getmtime(self.output_folder)
+            if images_time < output_time:
+                UP_TO_DATE_FLAG = True
 
+        if UP_TO_DATE_FLAG:
+            print("Output folder is up to date. No need to process images.")
+            self.face_grouper = FaceGrouper(face_folder=self.directory,
+                                        output_folder=self.output_folder,
+                                        images_folder=images_root_path)
+        else:
+            print("Output folder is outdated. Processing images.")
+            if os.path.exists(self.output_folder):
+                shutil.rmtree(self.output_folder)
+                print(f"[INFO] Deleted existing output folder: {self.output_folder}")
+            if os.path.exists(self.directory):
+                shutil.rmtree(self.directory)
+                print(f"[INFO] Deleted existing face folder: {self.directory}")
+
+            face_images, face_to_image_map = self.extract_all_faces(images_root_path, confidence_threshold)
+            self.face_grouper = FaceGrouper(face_to_image_map=face_to_image_map, 
+                                            detection_faces=face_images, 
+                                            face_folder=self.directory, 
+                                            output_folder=self.output_folder, 
+                                            images_folder=images_root_path)
+            
+            self.face_grouper.group_faces()
+
+        return self.face_grouper
+    
+    def change_group_name(self, old_name, new_name, debug=False):
+        if self.face_grouper:
+            done = self.face_grouper.change_group_name(old_name, new_name)
+            if debug:
+                self.face_grouper.show_grouped_faces(new_name)
+            self.face_grouper.save_all() if done else None
+        else:
+            print("Face grouper not initialized. Please run process_and_group_faces first.")
 
 if __name__ == "__main__":
-    face_processor = FaceProcessor()
+    face_processor = FaceProcessor(directory="Face_Processing/extracted_faces", 
+                                   output_folder="Face_Processing/grouped_faces")
+    
     root_path = "images"
-    detected_faces, detected_faces_map = face_processor.extract_all_faces(root_path, confidence_threshold=0.9)
-    print(f"Detected faces: {detected_faces}")
-    print()
-    print(f"Detected faces map: {detected_faces_map}")
-    face_processor.show_extracted_faces(detected_faces, title="Extracted Faces")
-
-    face_grouping = FaceGrouper(face_to_image_map=detected_faces_map, detection_faces=detected_faces)
-    face_grouping.group_faces()
-    print("Faces grouped successfully.")
-    print('*' * 50)
-
-    face_grouping.show_grouped_faces('Person_8')
-    new_name = input("Enter new name for group: ")
-    face_grouping.change_group_name("Person_8", new_name)
-
-    face_grouping.save_all()
+    face_processor.process_and_group_faces(root_path, confidence_threshold=0.9)
+    face_processor.change_group_name("Person_0", "Yasser")
+    face_processor.change_group_name("Person_1", "Morsy")
+    face_processor.change_group_name("Person_2", "Mira")
+    face_processor.change_group_name("Person_5", "Yasser", debug=True)
