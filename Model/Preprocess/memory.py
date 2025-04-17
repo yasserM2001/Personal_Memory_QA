@@ -3,6 +3,7 @@ from .augment import AugmentContext
 import os
 import json
 import numpy as np
+from Face_Processing.face_extraction import FaceProcessor
 
 
 class Memory():
@@ -22,6 +23,8 @@ class Memory():
             json_data_file_path=json_data_file_path
             )
         
+        self.face_processor = None
+        
     def preprocess(self):
         self.preprocess_memory.process()
         self.memory_content_processed = self.preprocess_memory.memory_content_processed
@@ -35,6 +38,18 @@ class Memory():
             vector_db_folder=self.vector_db_folder
         )
         self.augment_context.augment()
+
+    def detect_faces(self, confidence_threshold=0.9):
+        """Detect faces in the images and save them."""
+        if self.memory_content_processed is None:
+            raise ValueError("Memory content is not processed yet.")
+        
+        self.face_processor = FaceProcessor(directory=os.path.join(self.processed_folder, "extracted_faces"),
+                                            output_folder=os.path.join(self.processed_folder, "grouped_faces"))
+        self.face_processor.process_and_group_faces(
+            images_root_path=self.preprocess_memory.raw_data_folder,
+            confidence_threshold=confidence_threshold
+        )
 
     def load_processed_memory(self):
         """Load the already processed memory content from saved JSON and vector files."""
