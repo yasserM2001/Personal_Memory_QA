@@ -1,5 +1,5 @@
 import cv2
-from face_grouping import FaceGrouper
+from .face_grouping import FaceGrouper
 import os
 import torch
 import uuid
@@ -141,13 +141,13 @@ class FaceProcessor:
         else:
             print("Face grouper not initialized. Please run process_and_group_faces first.")
 
-if __name__ == "__main__":
-    face_processor = FaceProcessor(directory="Face_Processing/extracted_faces", 
-                                   output_folder="Face_Processing/grouped_faces")
+# if __name__ == "__main__":
+#     face_processor = FaceProcessor(directory="Face_Processing/extracted_faces", 
+#                                    output_folder="Face_Processing/grouped_faces")
     
-    root_path = "images"
-    face_processor.process_and_group_faces(root_path, confidence_threshold=0.9)
-    face_processor.change_group_name("Person_0", "Yasser")
-    face_processor.change_group_name("Person_1", "Morsy")
-    face_processor.change_group_name("Person_2", "Mira")
-    face_processor.change_group_name("Person_5", "Yasser", debug=True)
+#     root_path = "images"
+#     face_processor.process_and_group_faces(root_path, confidence_threshold=0.9)
+#     face_processor.change_group_name("Person_0", "Yasser")
+#     face_processor.change_group_name("Person_1", "Morsy")
+#     face_processor.change_group_name("Person_2", "Mira")
+#     face_processor.change_group_name("Person_5", "Yasser", debug=True)
