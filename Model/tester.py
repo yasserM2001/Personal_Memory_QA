@@ -7,6 +7,7 @@ from Testing_Dataset.downloader import PhotoDownloader
 from Testing_Dataset.processor import FlickrDataProcessor
 from Preprocess.memory import Memory
 from Query.query import QueryHandler
+import time
 
 def process_user_questions(user_id: str, memory_instance: Memory, output_file: str = None, batch_size: int = 15) -> None:
     """
@@ -158,7 +159,7 @@ if __name__ == '__main__':
     processed_users = 0
 
     # Process each user
-    for user_id in users:
+    for user_id in users[:3]:
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
@@ -197,7 +198,7 @@ if __name__ == '__main__':
             
             # 3. Check and load processed memory
             processed_memory_file = os.path.join("data", "processed", safe_user_id, "memory_content_processed.json")
-            vector_db_exists = os.path.exists(os.path.join("data", "vector_db", safe_user_id, "vector_db_list.json"))
+            vector_db_exists = os.path.join("data", "vector_db", safe_user_id, "vector_db_list.json")
             
             if os.path.exists(processed_memory_file) and os.path.exists(vector_db_exists):
                 print("\n[2/3] Loading existing processed memory...")
@@ -208,14 +209,14 @@ if __name__ == '__main__':
                 memory.preprocess()
                 memory.augment()
                 print("[2/3] DONE")
-            
+                        
             # 4. Process questions
             print("\n[3/3] Processing questions...")
             process_user_questions(
                 user_id=user_id,
                 memory_instance=memory,
                 output_file=os.path.join("results", "all_users_results.json"),
-                batch_size=15
+                batch_size=10
             )
             print("[3/3] DONE")
             
