@@ -114,8 +114,8 @@ def process_single_question(question_data: Dict, query_handler: QueryHandler) ->
         question_id = question_data['question_id']
         print(f"Question: {question_data['question']}")
         
-        rag_result = query_handler.query_rag(question_data['question'], topk=15)
-        memory_result = query_handler.query_memory(question_data['question'], topk=15)
+        rag_result = query_handler.query_rag(question_data['question'], topk=10)
+        memory_result = query_handler.query_memory(question_data['question'], topk=10)
         
         return {
             "question_id": question_id,
@@ -155,11 +155,10 @@ if __name__ == '__main__':
     # users = list(set(all_photos_data.keys()).intersection(all_users_questions.keys()))
     users = list(all_photos_data.keys())
     print(f"Total users to process: {len(users)}")
-    print(f"Users: {users[:5]}")
     processed_users = 0
 
     # Process each user
-    for user_id in users[:3]:
+    for user_id in users:
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
@@ -216,7 +215,7 @@ if __name__ == '__main__':
                 user_id=user_id,
                 memory_instance=memory,
                 output_file=os.path.join("results", "all_users_results.json"),
-                batch_size=10
+                batch_size=2
             )
             print("[3/3] DONE")
             
