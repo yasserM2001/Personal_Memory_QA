@@ -14,7 +14,7 @@ function PasswordValidator({ password, passwordConfirmation }) {
     const hasUpper = /[A-Z]/.test(password)
     const hasLower = /[a-z]/.test(password)
     const hasDigit = /[\d]/.test(password)
-    const hasSymbol = /[~`!@#$%^&*()_+=\-\\|\]\}\[\{'";:\/\?\.>,<\}\]]/.test(password)
+    const hasSymbol = /[~`!@#$%^&*()_+=\-\\|[\]{};'":/?.>,<]/.test(password);
     const between = password.length >= 8 && password.length <= 16
     const match = password === passwordConfirmation
 

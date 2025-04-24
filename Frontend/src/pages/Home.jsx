@@ -1,9 +1,8 @@
-import React from 'react'
-import { useState } from 'react';
-import Register from '../components/auth/Register';
-export default function Home() {
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-    const [form, setForm] = useState("");
+export default function Home() {
+    const navigate = useNavigate();
 
     return (
         <div className="text-white font-sans flex items-center justify-center min-h-screen flex-col">
@@ -18,33 +17,32 @@ export default function Home() {
                     Simply upload your photos, ask questions, and discover insights about your memories like never before.
                 </p>
 
-                <div className=''>
-                <button onClick={()=>setForm(<Register/>)} className="bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold shadow-md transition duration-300 hover:bg-indigo-700 hover:shadow-lg fade-in">
-                   <a href="/register">Get Started</a>
-                </button>
+                <div>
+                    <button
+                        onClick={() => navigate('/register')}
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold shadow-md transition duration-300 hover:bg-indigo-700 hover:shadow-lg fade-in"
+                    >
+                        Get Started
+                    </button>
                 </div>
-
-            </div>
-            <div id='register'>
-            {form}
             </div>
 
             <style jsx>{`
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
+                @keyframes fadeIn {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
-                100% {
-                    opacity: 1;
-                    transform: translateY(0);
-                    }
-                    }
-                    
-                    .fade-in {
-                        animation: fadeIn 1.5s ease-out;
-                        }
-                        `}</style>
+
+                .fade-in {
+                    animation: fadeIn 1.5s ease-out;
+                }
+            `}</style>
         </div>
     );
-};
+}

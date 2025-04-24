@@ -33,11 +33,7 @@ const Initialize = () => {
       />
     </div>
     <div className="mt-4">
-      <img
-        src={image}
-        alt="The evidence picture"
-        className="w-full h-auto rounded"
-      />
+      <img src={image} alt="The evidence" className="w-full h-auto rounded"/>
     </div>
   </div>
 </div>

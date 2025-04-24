@@ -12,7 +12,7 @@ function MobileValidator({mobile}) {
     return (
         <div>
             <p className="flex justify-between flex-col text-xs">
-                {(mobile.length <11) ? <Len/> : ((mobile.length == 11) && isValid)? <Valid/> :<Invalid/>}
+                {(mobile.length <11) ? <Len/> : ((mobile.length === 11) && isValid)? <Valid/> :<Invalid/>}
             </p>
         </div>
     )

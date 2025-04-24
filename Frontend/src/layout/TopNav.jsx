@@ -1,21 +1,12 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { useState } from 'react';
-import Login from '../components/auth/Login';
-import About from '../pages/About';
-import Home from '../pages/Home';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function TopNav() {
-
-  const [form, setForm] = useState("");
-
   return (
-    <div className='relative'>
-    <nav className='p-5 sticky top-0  bg-gray-900 text-gray-100 flex justify-evenly'>
-        <Link to='/'onClick={() => setForm(<Home />)} >Home</Link>
-        <Link to='/login' onClick={() => setForm(<Login />)} >Login</Link>
-        <Link to='/about'onClick={() => setForm(<About />)}>About</Link>
+    <nav className='p-5 sticky top-0 z-50 bg-gray-900 text-gray-100 flex justify-evenly'>
+      <Link to='/'>Home</Link>
+      <Link to='/login'>Login</Link>
+      <Link to='/about'>About</Link>
     </nav>
-    </div>
-  )
+  );
 }
