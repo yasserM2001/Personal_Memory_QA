@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 
 export default function Register() {
 
+    const [userImage, setUserImage] = useState(null);
     const navigate = useNavigate();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -101,6 +102,14 @@ export default function Register() {
             alert('Please fill in all required fields');
         }
     }
+    //image upload
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const imageURL = URL.createObjectURL(file);
+            setUserImage(imageURL);
+        }
+    };
 
     return (
         <div className="flex items-center justify-center min-h-screen p-6">
@@ -132,6 +141,33 @@ export default function Register() {
                         </p>
                     </div>
 
+                    {/* User Upload picture */}
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-4">
+                            {/* File Input */}
+                            <div>
+                                <label htmlFor="userImage" className="block text-sm font-medium text-white">Profile Picture</label>
+                                <input
+                                    id="userImage"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="w-full p-2 bg-gray-700 border border-gray-600 text-white rounded"
+                                />
+                            </div>
+
+                            {/* Image Preview */}
+                            {userImage && (
+                                <div className="mt-2">
+                                    <img
+                                        src={userImage}
+                                        alt="Profile preview"
+                                        className="w-24 h-24 rounded-full object-cover"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     {/* Mobile number */}
                     <div>
                         <label htmlFor="mobile" className="block mb-2 text-sm font-medium text-white">Mobile</label>
@@ -169,6 +205,7 @@ export default function Register() {
                         </span>
                     </div>
 
+                    {/* register submit button */}
                     <button
                         type="submit"
                         className="w-full bg-indigo-600 text-white font-semibold rounded-xl text-lg py-2.5 px-5 hover:bg-indigo-700 transition duration-300 shadow-md">Create an Account</button>

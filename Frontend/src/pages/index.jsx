@@ -15,6 +15,8 @@ export default function Pages() {
         <Route path='/init' element={<Initialize />} />
         <Route path='/login' element={<Login />} />
         <Route path='/about' element={<About />} />
+
+        
       </Routes>
     </div>
   )

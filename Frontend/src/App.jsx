@@ -1,7 +1,8 @@
 // Layout
 import TopNav from './layout/TopNav';
+import People from './layout/People';
 // Routes
-import Pages from './pages'
+import Pages from './pages';
 
 function App() {
 
@@ -10,6 +11,8 @@ function App() {
 		<div className="">
 
 			<TopNav />
+
+			<People />
 
 			<Pages />
 
