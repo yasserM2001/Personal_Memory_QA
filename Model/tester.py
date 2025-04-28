@@ -1,13 +1,11 @@
 import json
 import os
-from pathlib import Path
 from typing import Dict
 
 from Testing_Dataset.downloader import PhotoDownloader
 from Testing_Dataset.processor import FlickrDataProcessor
 from Preprocess.memory import Memory
 from Query.query import QueryHandler
-import time
 
 def process_user_questions(user_id: str, memory_instance: Memory, output_file: str = None, batch_size: int = 15) -> None:
     """
@@ -104,7 +102,7 @@ def process_questions(user_id: str, questions: list[Dict], all_results: Dict,
         if processed_count % batch_size == 0:
             save_results(all_results, output_file)
             print(f"\nSaved progress after {processed_count} questions processed")
-    
+                
     save_results(all_results, output_file)
     print_summary(user_id, processed_count, len(questions), output_file)
 
@@ -114,8 +112,8 @@ def process_single_question(question_data: Dict, query_handler: QueryHandler) ->
         question_id = question_data['question_id']
         print(f"Question: {question_data['question']}")
         
-        rag_result = query_handler.query_rag(question_data['question'], topk=10)
-        memory_result = query_handler.query_memory(question_data['question'], topk=10)
+        rag_result = query_handler.query_rag(question_data['question'], topk=15)
+        memory_result = query_handler.query_memory(question_data['question'], topk=15)
         
         return {
             "question_id": question_id,
@@ -159,6 +157,8 @@ if __name__ == '__main__':
 
     # Process each user
     for user_id in users:
+        if user_id == '13485371@N05':
+            continue
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
@@ -215,7 +215,7 @@ if __name__ == '__main__':
                 user_id=user_id,
                 memory_instance=memory,
                 output_file=os.path.join("results", "all_users_results.json"),
-                batch_size=2
+                batch_size=1
             )
             print("[3/3] DONE")
             
