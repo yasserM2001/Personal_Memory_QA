@@ -8,6 +8,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 import shutil
+import json
 
 class FaceProcessor:
     def __init__(self, directory="extracted_faces", output_folder="grouped_faces") -> None:
@@ -43,43 +44,32 @@ class FaceProcessor:
         image = Image.open(image_path).convert("RGB")
         boxes, probs = self.mtcnn.detect(image)
         face_images = []
+        boxes_info = {}
         if boxes is not None:
             for i, (box, prob) in enumerate(zip(boxes, probs)):
-                # print(f"Box {i}: {box}, Probability: {prob}")
                 if prob < confidence_threshold:
                     continue  # Skip low confidence
 
                 left, top, right, bottom = map(int, box)
                 face = image.crop((left, top, right, bottom))
 
-                # face_id = str(uuid.uuid4())[:8]
-
                 face_name = f"face_{count}.jpg"
                 face_path = os.path.join(self.directory, face_name)
                 face.save(face_path)
                 face_images.append(face_name)
+                
+                boxes_info[face_name] = [left, top, right, bottom]
+
                 count += 1
 
-        return face_images
+        return face_images, boxes_info
   
-    def extract_all_faces(self, images_root_path, confidence_threshold=0.9):
-        os.makedirs(self.directory, exist_ok=True)
-        face_images = []
-        for image_name in os.listdir(images_root_path):
-            image_path = os.path.join(images_root_path, image_name)
-            if not image_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                continue
-            faces = self.extract_faces(image_path, confidence_threshold, count=len(face_images))
-            face_images.extend(faces)
-
-        print(f"Extracted {len(face_images)} faces from {len(os.listdir(images_root_path))} images.")
-        return face_images
-
     def extract_all_faces(self, images_root_path, confidence_threshold=0.9):
         os.makedirs(self.directory, exist_ok=True)
         
         face_images = []
         face_to_image_map = {}
+        boxes_info = {}
 
         count = 0
         for image_name in os.listdir(images_root_path):
@@ -87,15 +77,22 @@ class FaceProcessor:
                 continue
 
             image_path = os.path.join(images_root_path, image_name)
-            faces = self.extract_faces(image_path, confidence_threshold, count=count)
+            faces, boxes = self.extract_faces(image_path, confidence_threshold, count=count)
 
             for face_file in faces:
                 face_to_image_map[face_file] = image_name
                 count += 1
 
             face_images.extend(faces)
+            boxes_info.update(boxes)
+
 
         print(f"Extracted {len(face_images)} faces from {len(os.listdir(images_root_path))} images.")
+
+        # boxes_json_path = os.path.join(self.directory, "boxes_info.json")
+        # with open(boxes_json_path, "w") as f:
+        #     json.dump(boxes_info, f, indent=4)
+
         return face_images, face_to_image_map
     
     def process_and_group_faces(self, images_root_path, confidence_threshold=0.9):
@@ -141,13 +138,16 @@ class FaceProcessor:
         else:
             print("Face grouper not initialized. Please run process_and_group_faces first.")
 
-# if __name__ == "__main__":
-#     face_processor = FaceProcessor(directory="Face_Processing/extracted_faces", 
-#                                    output_folder="Face_Processing/grouped_faces")
-    
-#     root_path = "images"
-#     face_processor.process_and_group_faces(root_path, confidence_threshold=0.9)
-#     face_processor.change_group_name("Person_0", "Yasser")
-#     face_processor.change_group_name("Person_1", "Morsy")
-#     face_processor.change_group_name("Person_2", "Mira")
-#     face_processor.change_group_name("Person_5", "Yasser", debug=True)
+    def get_image_to_faces_map(self):
+        if not self.face_grouper or not self.face_grouper.group_to_images:
+            print("Face grouper not initialized or no grouping data available.")
+            return {}
+
+        image_to_faces_map = {}
+        for group, images in self.face_grouper.group_to_images.items():
+            for image in images:
+                if image not in image_to_faces_map:
+                    image_to_faces_map[image] = []
+                image_to_faces_map[image].append(group)
+        
+        return image_to_faces_map
