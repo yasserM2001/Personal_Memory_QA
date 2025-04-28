@@ -13,55 +13,6 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 import re
 
-def count_words(text):
-    words = re.split(r'[ \n,.!?():"/;]+', text)
-    word_count = len([word for word in words if word])
-    
-    return word_count
-
-
-def parse_memory_to_string(memory: dict) -> str:
-    filename = memory['filename']
-
-    capture_method = memory['metadata']['capture_method']
-
-    temporal = memory['metadata']['temporal_info']
-    date_string = temporal['date_string']
-    day_of_week = temporal['day_of_week']
-    time_of_the_day = temporal['time_of_the_day']
-    temporal_info = f'{date_string}, {day_of_week}, {time_of_the_day}'
-
-    location = memory['metadata']['location']
-    address = location.get('address', 'Unknown')
-
-    content = memory['content']
-
-    caption = content.get('caption', '')
-    objects = content.get('objects', [])
-    people = content.get('people', [])
-    activities = content.get('activities', [])
-    text = content.get('text', '')
-    speech = content.get('speech', '')
-
-    word_count = count_words(text)
-    text_in_prompt = text if word_count < 100 else ""
-
-    memory_string = f'''
-memory_id: {filename}
-capture method: {capture_method}
-temporal info: {temporal_info}
-location: {address}
-
-Content: 
-caption: {caption}
-visible objects: {objects}
-visible people: {people}
-visible text: {text_in_prompt}
-heard speech: {speech}
-inferred activities: {activities}\n\n'''
-    return memory_string
-
-
 class LLMWrapper():
     def __init__(self,
                  templates: dict = None,
@@ -76,6 +27,7 @@ class OpenAIWrapper(LLMWrapper):
         super().__init__(templates)
         
         self.llm = OpenAI()
+        # self.llm = OpenAI(base_url="https://models.inference.ai.azure.com")
         self.model = model
 
 
@@ -94,7 +46,9 @@ class OpenAIWrapper(LLMWrapper):
             model = self.model
         
         #############
-        model = 'gpt-4o'
+        # model = 'gpt-4o'
+        # model = 'gpt-3.5-turbo'
+        print(f"================================== Calling model: {model} ===================================")
 
         if model == 'gpt-3.5-2024-08-06':
             max_tokens = 16384
@@ -135,9 +89,14 @@ class OpenAIWrapper(LLMWrapper):
 
         return response, result, cost
 
-    def generate_visual_content(self, image):
+    def generate_visual_content(self, image, face_tags=None):
         system_prompt = self.templates['prompt_visual_content']
 
+        # def resize_image(image, max_size=(800, 800)):
+        #         image.thumbnail(max_size)
+        #         return image
+        
+        # image = resize_image(image, max_size=(800, 800))
         # create a base64 image
         buff = BytesIO()
         if image.mode == "RGBA":
@@ -146,9 +105,15 @@ class OpenAIWrapper(LLMWrapper):
 
         base64_img = base64.b64encode(buff.getvalue()).decode("utf-8")
         user_prompt = [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}", "detail": "low"}}]
+        
+        # if face_tags is not None:
+        #     people_info = f"People tagged in the image: {', '.join(face_tags)}"
+        #     user_prompt.append({"type": "text", "content": people_info})
+        #     user_prompt = json.dumps(user_prompt)
+        
         messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
 
-        _, result, cost = self._call_api(messages, json_mode=True)
+        _, result, cost = self._call_api(messages, json_mode=True, model='gpt-4o-mini')
         result = json.loads(result)
 
         return result, cost
@@ -220,8 +185,11 @@ class OpenAIWrapper(LLMWrapper):
 
         return result, cost
     
-    def query_rag(self, query, memory_prompt):
-        system_prompt = self.templates['prompt_query_rag']
+    def query_rag(self, query, memory_prompt, detect_faces=False):
+        if detect_faces:
+            system_prompt = self.templates['prompt_query_rag_update']
+        else:
+            system_prompt = self.templates['prompt_query_rag']
 
         user_prompt = f"Query: {query}\n"
         user_prompt += memory_prompt
@@ -231,8 +199,11 @@ class OpenAIWrapper(LLMWrapper):
         result = json.loads(result)
         return response, result, cost
     
-    def augment_query(self, query, today):
-        system_prompt = self.templates['prompt_augment_query']
+    def augment_query(self, query, today, detect_faces=False):
+        if detect_faces:
+            system_prompt = self.templates['prompt_augment_query_update']
+        else:
+            system_prompt = self.templates['prompt_augment_query']
 
         user_prompt = f"Query: {query}, Today: {today}"
         messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
@@ -254,8 +225,11 @@ class OpenAIWrapper(LLMWrapper):
         result = json.loads(result)
         return result, cost
     
-    def query_memory(self, query, memory_prompt):
-        system_prompt = self.templates['prompt_query_memory']
+    def query_memory(self, query, memory_prompt, detect_faces=False):
+        if detect_faces:
+            system_prompt = self.templates['prompt_query_memory_update']
+        else:
+            system_prompt = self.templates['prompt_query_memory']
 
         user_prompt = f"Query: {query}\n"
         user_prompt += memory_prompt

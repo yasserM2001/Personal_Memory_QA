@@ -15,6 +15,7 @@ from .metadata_extractor import MetadataExtractor
 from utils import read_json_file, get_data_of_photo
 from ocr import OCR
 from LLM.llm import OpenAIWrapper
+from Face_Processing.face_extraction import FaceProcessor
 
 
 def get_first_frame(video_path):
@@ -81,6 +82,7 @@ class ProcessMemoryContent():
         self.metadata_extractor = MetadataExtractor()
         self.ocr = OCR()
         self.llm = None
+        self.face_processor = None
 
     def load_metadata_and_sort(self):
         files = os.listdir(self.raw_data_folder)
@@ -295,9 +297,11 @@ class ProcessMemoryContent():
             json.dump(identical_memory_list, f, indent=4, ensure_ascii=False)
         
     def process_identical_memory_content(self):
+        to_remove = []
         for memory in tqdm(self.memory_content_processed[:]):
-            if 'content' in memory:
+            if 'content' in memory and 'caption' in memory['content']:
                 continue
+
             media_type = memory['media_type']
             if media_type == 'video':
                 # path = memory['filepath']
@@ -326,11 +330,17 @@ class ProcessMemoryContent():
             else: # image
                 path = memory['filepath']
                 image = Image.open(path)
+
+                # Get face tags if they exist
+                face_tags = None
+                if 'content' in memory and 'face_tags' in memory['content']:
+                    face_tags = memory['content']['face_tags']
+
                 try:
-                    visual_content, cost = self.llm.generate_visual_content(image)
+                    visual_content, cost = self.llm.generate_visual_content(image, face_tags=face_tags)
                 except Exception as e:
                     print(f"Error: {e}")
-                    self.memory_content_processed.remove(memory)
+                    to_remove.append(memory)
                     continue
 
                 try:
@@ -339,7 +349,7 @@ class ProcessMemoryContent():
                     raise e
 
                 self.cost += cost
-                
+
                 content = {
                     'caption': visual_content['caption'],
                     'objects': visual_content['objects'],
@@ -347,17 +357,23 @@ class ProcessMemoryContent():
                     'activities': visual_content['activities'],
                     'text': text
                 }
+
+                if face_tags:
+                    content['face_tags'] = face_tags
+
                 memory['content'] = content
+        for memory in to_remove:
+            self.memory_content_processed.remove(memory)
 
     def _save(self, save_data, save_path):
         # with open(save_path, 'w') as f:
         with open(save_path, 'w', encoding='utf-8') as f:
             json.dump(save_data, f, indent=4, ensure_ascii=False)
 
-    def process(self):
+    def process(self, detect_faces=False):
          # check if the identical memory has already been processed
         identical_memory_list_path = os.path.join(self.processed_folder, 'identical_memory_list.json')
-        print(identical_memory_list_path)
+
         if not os.path.exists(identical_memory_list_path):
             ## STEP 1
             self.load_metadata_and_sort()
@@ -365,8 +381,6 @@ class ProcessMemoryContent():
             # STEP 2
             self.filter_identical_memory()
         else:
-            # with open(identical_memory_list_path, 'r') as f:
-            #     self.identical_memory_list = json.load(f)
             with open(identical_memory_list_path, 'r', encoding='utf-8') as f:
                 self.identical_memory_list = json.load(f)
 
@@ -380,14 +394,28 @@ class ProcessMemoryContent():
         print(f"Identical memory has been processed. \nImage: {image_num}, Video: {video_num}")
 
         self.llm = OpenAIWrapper()
+
         memory_cotent_processed_path = os.path.join(self.processed_folder, 'memory_content_processed.json')
         if not os.path.exists(memory_cotent_processed_path):
             self.memory_content_processed = self.identical_memory_list.copy()
         else:
-            # with open(memory_cotent_processed_path, 'r') as f:
             with open(memory_cotent_processed_path, 'r', encoding='utf-8') as f:
                 self.memory_content_processed = json.load(f)
 
+        # FACE DETECTION PART
+        if detect_faces:
+            self.detect_faces()
+            # self.face_processor.change_group_name('Person_62', 'Hippie Maya')
+            # self.face_processor.change_group_name('Person_55', 'Hope')
+            # self.face_processor.change_group_name('Person_52', 'Alice')
+            # self.face_processor.change_group_name('Person_54', 'Eden')
+            # self.face_processor.change_group_name('Person_7', 'Eden')
+            # self.face_processor.change_group_name('Person_9', 'lulu')
+            
+            print("Face detection completed.")
+            self.add_face_tags()
+            print("Face tags added to memory content.")
+            
         try:
             self.process_identical_memory_content()
         except Exception as e:
@@ -398,3 +426,45 @@ class ProcessMemoryContent():
         save_path = os.path.join(self.processed_folder, 'memory_content_processed.json')
         self._save(self.memory_content_processed, save_path)
 
+    def detect_faces(self, confidence_threshold=0.9):
+        """Detect faces in the images and save them."""
+        if self.memory_content_processed is None:
+            raise ValueError("Memory content is not processed yet.")
+        
+        self.face_processor = FaceProcessor(directory=os.path.join(self.processed_folder, "extracted_faces"),
+                                            output_folder=os.path.join(self.processed_folder, "grouped_faces"))
+        face_grouper = self.face_processor.process_and_group_faces(
+            images_root_path=self.raw_data_folder,
+            confidence_threshold=confidence_threshold
+        )
+        # face_grouper.show_grouped_faces("Person_0")
+
+    def add_face_tags(self):
+        """Add face tags to the processed memory content based on face detection results."""
+        if self.memory_content_processed is None:
+            raise ValueError("Memory content is not processed yet.")
+        
+        if self.face_processor is None:
+            raise ValueError("Face detection has not been performed yet. Call detect_faces() first.")
+
+        # Get mapping of images to detected faces
+        image_to_faces_map = self.face_processor.get_image_to_faces_map()
+        
+        print("Adding face tags to memory content...")
+        for memory in tqdm(self.memory_content_processed):
+            if memory['media_type'] != 'image':
+                continue
+
+            # remove the face tags if they exist
+            if 'content' in memory and 'face_tags' in memory['content']:
+                del memory['content']['face_tags']
+                
+            filename = memory['filename']
+            if filename in image_to_faces_map:
+                if 'content' not in memory:
+                    memory['content'] = {}
+                memory['content']['face_tags'] = image_to_faces_map[filename]
+        
+        # Save the updated content
+        save_path = os.path.join(self.processed_folder, 'memory_content_processed.json')
+        self._save(self.memory_content_processed, save_path)

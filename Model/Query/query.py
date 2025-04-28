@@ -4,14 +4,15 @@ from LLM.llm import OpenAIWrapper
 import time 
 from Query.query_augment import QueryAugmentation
 from datetime import datetime
-from utils import parse_memory_to_string, parse_composite_context_to_string, parse_knowledge_to_string
+from utils import parse_memory_to_string, parse_composite_context_to_string, parse_knowledge_to_string, parse_memory_to_string_update
 
 
 class QueryHandler():
-    def __init__(self,memory: Memory, debug: bool = False):
+    def __init__(self,memory: Memory, detect_faces=False, debug: bool = False):
         self.memory = memory
         self.llm = OpenAIWrapper()
         self.cost = 0
+        self.detect_faces = detect_faces
         self.debug = debug
         if debug: 
             print('*'* 100)
@@ -51,6 +52,8 @@ class QueryHandler():
         self.location_list = augmented_context.location_list
         self.location_vector = augmented_context.location_vector_db
 
+        self.faces = augmented_context.face_list
+
     ## baseline model
     def query_rag(self, query, topk=25):
         query_emb = self.llm.calculate_embeddings(query)
@@ -80,8 +83,10 @@ class QueryHandler():
             memory_id = rag['memory_ids']
             prompt += f'memory_id: {memory_id} '
             prompt += f'memory: {rag["memory"]}\n'
+        
+        # print(prompt)
 
-        response, result, cost = self.llm.query_rag(query, prompt)
+        response, result, cost = self.llm.query_rag(query, prompt, self.detect_faces)
 
         print("RAG API cost: ", cost)
         return result
@@ -90,7 +95,7 @@ class QueryHandler():
         start_time_query = time.time()
         start_time = time.time()
 
-        augment_query = QueryAugmentation(query)
+        augment_query = QueryAugmentation(query, self.detect_faces)
         augmented_query, cost = augment_query.augment()
         
         self.cost += cost
@@ -108,6 +113,10 @@ class QueryHandler():
         people = augmented_query['people']
         activities = augmented_query['activities']
         complex_context = augmented_query['complex_context']
+        
+        tags = None
+        if self.detect_faces:
+            tags = augmented_query['tags']
 
         start_time = time.time()
 
@@ -139,6 +148,18 @@ class QueryHandler():
             for location in retrieved_location:
                 memory_id = location['memory_ids']
                 filtered_memory_list = list(set(filtered_memory_list + memory_id))
+
+        ####################### filter faces
+        if self.detect_faces:
+            if tags is not None:
+                face_memory_list = []
+                for tag in tags:
+                    matching_faces = [face for face in self.faces if tag.lower() == face['face_tag'].lower()]
+
+                    for face in matching_faces:
+                        face_memory_list.extend(face['memory_ids'])
+
+                filtered_memory_list = list(set(filtered_memory_list + face_memory_list))
 
         ####################### filter caption
         query_emb = self.llm.calculate_embeddings(query)
@@ -190,7 +211,7 @@ class QueryHandler():
         print("Memory filtering time cost: ", time_cost)
 
         start_time = time.time()
-        response, result, cost = self.llm.query_memory(query, final_prompt)
+        response, result, cost = self.llm.query_memory(query, final_prompt, self.detect_faces)
 
         tokens = response.usage.total_tokens
         print("Total tokens: ", tokens)
@@ -323,7 +344,10 @@ class QueryHandler():
         memory_prompt = ""
         memory_prompt += "Memories:\n"
         for memory in memory_list:
-            memory_prompt += parse_memory_to_string(memory)
+            if self.detect_faces:
+                memory_prompt += parse_memory_to_string_update(memory)
+            else:
+                memory_prompt += parse_memory_to_string(memory)
 
         memory_prompt += "Composite Context:\n"
         for context in composite_context:

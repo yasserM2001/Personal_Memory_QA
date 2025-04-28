@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from LLM.llm import OpenAIWrapper
 
-from utils import parse_memory_to_string, parse_memory_to_string_lite
+from utils import parse_memory_to_string, parse_memory_to_string_lite, parse_memory_to_string_update
 
 class AugmentContext():
     def __init__(
@@ -15,11 +15,14 @@ class AugmentContext():
             memory_content_processed: list,
             processed_folder=r"data\\processed", 
             vector_db_folder=r"data\\vector_db", 
+            detect_faces: bool = False,
             debug = False,
     ) -> None:
         self.memory_content_processed = memory_content_processed
         self.processed_folder = processed_folder
         self.vector_db_folder = vector_db_folder
+
+        self.detect_faces = detect_faces
 
         self.composite_context = []
         self.composite_context_embeddings = None
@@ -32,6 +35,8 @@ class AugmentContext():
         
         self.caption_list = []
         self.location_list = []
+
+        self.face_list = []
 
         self.debug = debug
 
@@ -398,7 +403,10 @@ class AugmentContext():
 
         batch_memory = ''
         for memory in memory_in_window:
-            memory_string = parse_memory_to_string(memory)
+            if self.detect_faces:
+                memory_string = parse_memory_to_string_update(memory)
+            else:
+                memory_string = parse_memory_to_string(memory)
             batch_memory += memory_string
 
         try:
@@ -498,9 +506,11 @@ class AugmentContext():
             temporal = f'{metadata["temporal_info"]["date_string"]}, {metadata["temporal_info"]["day_of_week"]}, {metadata["temporal_info"]["time_of_the_day"]}'
             location = metadata['location'].get('address', '')
 
-            # indexing
-            # memory_entry = f'{caption} {temporal} {location}'
-            memory_entry = parse_memory_to_string_lite(memory)
+            if self.detect_faces:
+                memory_entry = parse_memory_to_string_update(memory)
+            else:
+                memory_entry = parse_memory_to_string_lite(memory)
+                
             memory_id = memory['filename']
             entry = {'memory': memory_entry, 'memory_ids': [memory_id]}
 
@@ -520,7 +530,47 @@ class AugmentContext():
         with open(save_path_list, 'w') as f:
             json.dump(self.vector_db_list, f, indent=4)
 
+    def augment_face(self):
+        if not os.path.exists(self.vector_db_folder):
+            os.makedirs(self.vector_db_folder)
+            
+        face_list_path = os.path.join(self.vector_db_folder, 'face_list.json')
 
+        if os.path.exists(face_list_path):
+            with open(face_list_path, 'r') as f:
+                self.face_list = json.load(f)
+            return
+        
+        face_list = []
+        face_to_memory = {}  # mapping: face_tag -> list of memory_ids
+
+        print("Detecting faces...")
+        print(f"Total number of memories: {len(self.memory_content_processed)}")
+
+        for memory in tqdm(self.memory_content_processed):
+            if 'face_tags' in memory['content']:
+                face_tags = memory['content']['face_tags']
+                memory_id = memory['filename']
+
+                for face_tag in face_tags:
+                    if face_tag and face_tag.strip():
+                        if face_tag not in face_to_memory:
+                            face_to_memory[face_tag] = []
+                        face_to_memory[face_tag].append(memory_id)
+
+        # Now convert face_to_memory dict to face_list
+        for face_tag, memory_ids in face_to_memory.items():
+            face_list.append({
+                'face_tag': face_tag,
+                'memory_ids': list(set(memory_ids)) 
+            })
+        
+        self.face_list = face_list
+
+        # save
+        with open(face_list_path, 'w') as f:
+            json.dump(self.face_list, f, indent=4)
+                        
     def augment(self):
         print("Indexing atomic context...")
         self.augment_atomic_context()
@@ -534,6 +584,10 @@ class AugmentContext():
 
         print("Inferring composite context...")
         self.augment_slide_window()
+
+        if self.detect_faces:
+            print("Indexing faces...")
+            self.augment_face()
 
         print("Indexing whole memory for RAG...")
         self.generate_vector_db_for_rag()

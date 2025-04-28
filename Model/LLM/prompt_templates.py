@@ -33,13 +33,31 @@ The query may not contain detailed contextual filters. In such cases, make reaso
 Output a JSON object with the key 'augmented_query', including the sub-keys 'start_date', 'end_date', 'location', 'objects', 'people', 'activities', and 'complex_context'. Each sub-key should be a single string. Leave any sub-key empty if not applicable.
 """
 
+augment_query_update = """Given a query and today's date, identify the contextual filters. Contextual filters may include: 
+temporal information: e.g., "last week."
+location information: e.g., "Hawaii."
+visible objects: e.g., "poke bowl."
+people Seen: e.g., "people at the conference."
+activities performed: e.g., "ordering in a restaurant."
+more complex contexts such as events or travel: e.g., "traveling to Hawaii."
+and face tags (names) such as Lulu (Known names) or Person_1 (Unknown names) 
+The query may not contain detailed contextual filters. In such cases, make reasonable inferences. For example, for query "What products did I buy from Sephora", the result could be obtained from a Sephora receipt. Thus inferred contextual filters for objects might be "makeup/skincare products or receipts."
+Output a JSON object with the key 'augmented_query', including the sub-keys 'start_date', 'end_date', 'location', 'objects', 'people', 'activities', 'complex_context', and 'tags'. Each sub-key should be a single string. Leave any sub-key empty if not applicable.
+"""
+
 filter_related_composite_context = """Given a list of retrieved composite context, filter out the unrelated context to the given query. Output the filtered list of composite context in a JSON object with the key 'composite_context', each composite context should include the key 'event_name'.
 """
 
 query_memory = """Given a query, a list of memories and personal knowledge, generate a comprehensive answer to the query. Identify the episodic memories that can provide evidence to the question. The list of episodic memories should be comprehensive but no more than 30 instances. If the answer is not explicitly presented in the memories, make a reasonable inference. Output a JSON object with the key 'answer', 'explanation' and 'memory_ids'. The 'answer' should be a string and 'memory_ids' should be a list of memory ids.
 """
 
+query_memory_update = """Given a query, a list of memories and personal knowledge, generate a comprehensive answer to the query. Identify the episodic memories that can provide evidence to the question. The list of episodic memories should be comprehensive but no more than 30 instances. If names of people are mentioned or can be inferred from the memories, include their names clearly in the answer. If the answer is not explicitly presented in the memories, make a reasonable inference. Output a JSON object with the key 'answer', 'explanation' and 'memory_ids'. The 'answer' should be a string and 'memory_ids' should be a list of memory ids.
+"""
+
 query_rag = """Given a query, a list of memories, generate the answer to the query. Identify the episodic memories that can provide evidence to the question. If the answer is not explicitly presented in the memories, make a reasonable inference. Output a JSON object with the key 'answer', 'explanation' and 'memory_ids'. The 'answer' should be a string and 'memory_ids' should be a list of memory ids.
+"""
+
+query_rag_update = """Given a query, a list of memories, generate the answer to the query. Identify the episodic memories that can provide evidence to the question. If names of people are mentioned or can be inferred from the memories, include their names clearly in the answer. If the answer is not explicitly presented in the memories, make a reasonable inference. Output a JSON object with the key 'answer', 'explanation' and 'memory_ids'. The 'answer' should be a string and 'memory_ids' should be a list of memory ids.
 """
 ###  legacy
 
@@ -97,9 +115,12 @@ def merge_templates_to_dict() -> dict:
         'prompt_identify_event_act_query': identify_event_act_query,
         'prompt_identify_related_events': identify_related_events,
         'prompt_augment_query': augment_query,
+        'prompt_augment_query_update': augment_query_update,
         'prompt_filter_related_composite_context': filter_related_composite_context,
         'prompt_query_memory': query_memory,
-        'prompt_query_rag': query_rag
+        'prompt_query_memory_update': query_memory_update,
+        'prompt_query_rag': query_rag,
+        'prompt_query_rag_update': query_rag_update
     }
 
     return template_dict

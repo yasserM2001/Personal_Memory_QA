@@ -3,8 +3,10 @@ from datetime import datetime
 
 class QueryAugmentation():
     def __init__(self,
-                 query) -> None:
+                 query,
+                 detect_faces=False) -> None:
         self.query = query
+        self.detect_faces = detect_faces
 
         self.llm = OpenAIWrapper()
 
@@ -16,6 +18,6 @@ class QueryAugmentation():
             today = datetime.today()
             today = today.strftime("%Y-%m-%d")
 
-        result, cost = self.llm.augment_query(self.query, today)
+        result, cost = self.llm.augment_query(self.query, today, self.detect_faces)
 
         return result, cost
