@@ -55,7 +55,7 @@ class QueryHandler():
         self.faces = augmented_context.face_list
 
     ## baseline model
-    def query_rag(self, query, topk=25):
+    def query_rag(self, query, topk=25, llm='openai'):
         query_emb = self.llm.calculate_embeddings(query)
         query_emb = np.array(query_emb).reshape(-1, 1)
         similarities = np.matmul(self.rag_vector, query_emb).flatten()
@@ -86,17 +86,17 @@ class QueryHandler():
         
         # print(prompt)
 
-        response, result, cost = self.llm.query_rag(query, prompt, self.detect_faces)
+        response, result, cost = self.llm.query_rag(query, prompt, self.detect_faces, llm=llm)
 
         print("RAG API cost: ", cost)
         return result
 
-    def query_memory(self, query: str, topk: int = 30, atomic_topk: int = 5, location_topk: int = 5, composite_topk: int = 10, knowledge_topk: int = 10, text_topk: int = 10):
+    def query_memory(self, query: str, topk: int = 30, atomic_topk: int = 5, location_topk: int = 5, composite_topk: int = 10, knowledge_topk: int = 10, text_topk: int = 10, llm='openai'):
         start_time_query = time.time()
         start_time = time.time()
 
         augment_query = QueryAugmentation(query, self.detect_faces)
-        augmented_query, cost = augment_query.augment()
+        augmented_query, cost = augment_query.augment(llm=llm)
         
         self.cost += cost
         time_cost = time.time() - start_time
@@ -129,7 +129,7 @@ class QueryHandler():
         
         ####################### filter composite context
         filtered_memory_list = []
-        composite_memory_list, all_related_composite = self.filter_composite_context(complex_context, query, composite_topk)
+        composite_memory_list, all_related_composite = self.filter_composite_context(complex_context, query, composite_topk, llm=llm)
         filtered_memory_list = list(set(filtered_memory_list + composite_memory_list))
 
         ####################### atomic
@@ -211,10 +211,11 @@ class QueryHandler():
         print("Memory filtering time cost: ", time_cost)
 
         start_time = time.time()
-        response, result, cost = self.llm.query_memory(query, final_prompt, self.detect_faces)
-
-        tokens = response.usage.total_tokens
-        print("Total tokens: ", tokens)
+        response, result, cost = self.llm.query_memory(query, final_prompt, self.detect_faces, llm=llm)
+        if llm == 'openai':
+            tokens = response.usage.total_tokens
+            print("Total tokens: ", tokens)
+        
         self.cost += cost
         time_cost = time.time() - start_time
         print("Answer generation time cost: ", time_cost)
@@ -244,7 +245,7 @@ class QueryHandler():
         memory_ids = [memory['filename'] for memory in filtered_memory]
         return memory_ids
         
-    def filter_composite_context(self, composite_context, query, composite_topk):
+    def filter_composite_context(self, composite_context, query, composite_topk, llm='openai'):
         if composite_context == "":
             composite_context = query
 
@@ -258,7 +259,7 @@ class QueryHandler():
         # print(retrieved_composite_context)
         # rerank only the related memory using LLM
         # for conposite_context in retrieved_composite_context:
-        result, cost = self.llm.filter_related_composite_context(query, retrieved_composite_context)
+        result, cost = self.llm.filter_related_composite_context(query, retrieved_composite_context, llm=llm)
         self.cost += cost
 
         all_related_context = []

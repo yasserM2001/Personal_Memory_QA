@@ -3,6 +3,7 @@ from .augment import AugmentContext
 import os
 import json
 import numpy as np
+from Face_Processing.face_extraction import FaceProcessor
 
 
 class Memory():
@@ -39,6 +40,23 @@ class Memory():
             detect_faces=self.detect_faces
         )
         self.augment_context.augment()
+
+    def change_face_tag(self, face_tag: str, new_face_tag: str):
+        """Change the face tag in the memory content."""
+        if self.memory_content_processed is None:
+            raise ValueError("Memory content is not processed yet.")
+        
+        if self.preprocess_memory.memory_content_processed is None:
+            self.preprocess_memory.memory_content_processed = self.memory_content_processed
+
+        if self.preprocess_memory.face_processor is None:
+            face_processor = FaceProcessor(directory=os.path.join(self.processed_folder, "extracted_faces"),
+                                            output_folder=os.path.join(self.processed_folder, "grouped_faces"))
+            self.preprocess_memory.face_processor = face_processor
+
+        self.preprocess_memory.face_processor.change_group_name(face_tag, new_face_tag)
+        self.preprocess_memory.add_face_tags()
+
 
     def load_processed_memory(self):
         """Load the already processed memory content from saved JSON and vector files."""

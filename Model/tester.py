@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict
+import time
 
 from Testing_Dataset.downloader import PhotoDownloader
 from Testing_Dataset.processor import FlickrDataProcessor
@@ -112,8 +113,9 @@ def process_single_question(question_data: Dict, query_handler: QueryHandler) ->
         question_id = question_data['question_id']
         print(f"Question: {question_data['question']}")
         
-        rag_result = query_handler.query_rag(question_data['question'], topk=15)
-        memory_result = query_handler.query_memory(question_data['question'], topk=15)
+        rag_result = query_handler.query_rag(question_data['question'], topk=15, llm='gemini')
+        time.sleep(1)  # Avoid rate limit issues
+        memory_result = query_handler.query_memory(question_data['question'], topk=15, llm='gemini')
         
         return {
             "question_id": question_id,
@@ -156,9 +158,9 @@ if __name__ == '__main__':
     processed_users = 0
 
     # Process each user
-    for user_id in users:
-        if user_id == '13485371@N05':
-            continue
+    for user_id in users[:1]:
+        # if user_id == '13485371@N05':
+        #     continue
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
@@ -214,7 +216,7 @@ if __name__ == '__main__':
             process_user_questions(
                 user_id=user_id,
                 memory_instance=memory,
-                output_file=os.path.join("results", "all_users_results.json"),
+                output_file=os.path.join("results", "gemini_qa", "all_users_results.json"),
                 batch_size=1
             )
             print("[3/3] DONE")

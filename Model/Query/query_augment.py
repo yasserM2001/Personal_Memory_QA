@@ -10,7 +10,7 @@ class QueryAugmentation():
 
         self.llm = OpenAIWrapper()
 
-    def augment(self, specified_date=""):
+    def augment(self, specified_date="", llm="openai"):
         # parse temporal info
         if specified_date:
             today = specified_date    
@@ -18,6 +18,6 @@ class QueryAugmentation():
             today = datetime.today()
             today = today.strftime("%Y-%m-%d")
 
-        result, cost = self.llm.augment_query(self.query, today, self.detect_faces)
+        result, cost = self.llm.augment_query(self.query, today, self.detect_faces, llm=llm)
 
         return result, cost

@@ -2,14 +2,18 @@ from openai import OpenAI
 from io import BytesIO
 import base64
 import json
+from google import genai
 
 from .prompt_templates import merge_templates_to_dict
 from dotenv import load_dotenv
 import os
+from google import genai
 
 load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
+
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 import re
 
@@ -185,7 +189,7 @@ class OpenAIWrapper(LLMWrapper):
 
         return result, cost
     
-    def query_rag(self, query, memory_prompt, detect_faces=False):
+    def query_rag(self, query, memory_prompt, detect_faces=False, llm='openai'):
         if detect_faces:
             system_prompt = self.templates['prompt_query_rag_update']
         else:
@@ -194,24 +198,56 @@ class OpenAIWrapper(LLMWrapper):
         user_prompt = f"Query: {query}\n"
         user_prompt += memory_prompt
 
-        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        response, result, cost = self._call_api(messages, json_mode=True)
-        result = json.loads(result)
-        return response, result, cost
-    
-    def augment_query(self, query, today, detect_faces=False):
+        if llm == 'gemini':
+            print("Using Gemini LLM")
+            system_prompt = system_prompt + "\nPlease provide concise and direct answers. Focus on answering the user's question clearly, using as few words as possible while preserving essential information. Avoid repeating details or including irrelevant context. When possible, summarize or infer briefly without listing every memory ID unless necessary for clarity. The memory ids should be the memories most relevant to the answer. If the answer is not in the memories, please say 'I don't know'."
+
+            completed_prompt = f"{system_prompt}\n{user_prompt}"
+            response = safe_generate_content(completed_prompt, model_name="gemini-2.0-flash")
+            
+            text = response.text.strip()
+            try:
+                result = safe_json_parse(text)
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode JSON: {text}")
+            
+            return response, result, 0.000005 * len(response.text.split())
+        elif llm == 'openai':
+            print("Using OpenAI LLM")
+            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+            response, result, cost = self._call_api(messages, json_mode=True)
+            result = json.loads(result)
+            return response, result, cost
+
+    def augment_query(self, query, today, detect_faces=False, llm='openai'):
         if detect_faces:
             system_prompt = self.templates['prompt_augment_query_update']
         else:
             system_prompt = self.templates['prompt_augment_query']
 
         user_prompt = f"Query: {query}, Today: {today}"
-        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        response, result, cost = self._call_api(messages, json_mode=True)
-        result = json.loads(result)
-        return result, cost
+
+        if llm == 'gemini':
+            print("Using Gemini LLM")
+            completed_prompt = f"{system_prompt}\n{user_prompt}"
+            response = safe_generate_content(completed_prompt, model_name="gemini-2.0-flash")
+            
+            text = response.text.strip()
+
+            try:
+                result = safe_json_parse(text)
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode JSON: {text}")
+            
+            return result, 0.000005 * len(response.text.split())
+        
+        elif llm == 'openai':
+            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+            response, result, cost = self._call_api(messages, json_mode=True)
+            result = json.loads(result)
+            return result, cost
     
-    def filter_related_composite_context(self, query, composite_context):
+    def filter_related_composite_context(self, query, composite_context, llm='openai'):
         system_prompt = self.templates['prompt_filter_related_composite_context']
 
         user_prompt = ""
@@ -220,12 +256,26 @@ class OpenAIWrapper(LLMWrapper):
             context_str = f"event_name: '{event_name}'\n"
             user_prompt += context_str
 
-        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        response, result, cost = self._call_api(messages, json_mode=True)
-        result = json.loads(result)
-        return result, cost
+        if llm == 'gemini':
+            print("Using Gemini LLM")
+            completed_prompt = f"{system_prompt}\n{user_prompt}\nQuery: {query}"
+            response = safe_generate_content(completed_prompt, model_name="gemini-2.0-flash")
+            
+            text = response.text.strip()
+            try:
+                result = safe_json_parse(text)
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode JSON: {text}")
+            
+            return result, 0.000005 * len(response.text.split())
+        elif llm == 'openai':
+            print("Using OpenAI LLM")
+            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+            response, result, cost = self._call_api(messages, json_mode=True)
+            result = json.loads(result)
+            return result, cost
     
-    def query_memory(self, query, memory_prompt, detect_faces=False):
+    def query_memory(self, query, memory_prompt, detect_faces=False, llm='openai'):
         if detect_faces:
             system_prompt = self.templates['prompt_query_memory_update']
         else:
@@ -234,7 +284,129 @@ class OpenAIWrapper(LLMWrapper):
         user_prompt = f"Query: {query}\n"
         user_prompt += memory_prompt
 
-        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        response, result, cost = self._call_api(messages, json_mode=True)
-        result = json.loads(result)
-        return response, result, cost
+        if llm == 'gemini':
+            print("Using Gemini LLM")
+            system_prompt = system_prompt + "\nPlease provide concise and direct answers. Focus on answering the user's question clearly, using as few words as possible while preserving essential information. Avoid repeating details or including irrelevant context. When possible, summarize or infer briefly without listing every memory ID unless necessary for clarity. The memory ids should be the memories most relevant to the answer. If the answer is not in the memories, please say 'I don't know'."
+            completed_prompt = f"{system_prompt}\n{user_prompt}"
+            response = safe_generate_content(completed_prompt, model_name="gemini-2.0-flash")
+           
+            text = response.text.strip()
+            try:
+                result = safe_json_parse(text)
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode JSON: {text}")
+           
+            return response, result, 0.000005 * len(response.text.split())
+        elif llm == 'openai':
+            print("Using OpenAI LLM")
+            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+            response, result, cost = self._call_api(messages, json_mode=True)
+            result = json.loads(result)
+            return response, result, cost
+        else:
+            raise ValueError("Invalid LLM type. Choose either 'openai' or 'gemini'.")
+        
+from google.genai.errors import ServerError
+import random
+import time
+
+def safe_generate_content(prompt, model_name="gemini-2.0-flash", retries=5):
+    client = genai.Client(api_key=gemini_api_key)
+
+    for attempt in range(retries):
+        try:
+            response = client.models.generate_content(model=model_name, contents=prompt)
+            return response
+        except ServerError as e:
+            # print(f"⚠️ Server overloaded (attempt {attempt+1}/{retries}): {e}")
+            if attempt < retries - 1:
+                wait_time = 2 ** attempt + random.uniform(0, 1)
+                # print(f"Retrying in {wait_time:.1f} seconds...")
+                time.sleep(wait_time)
+            else:
+                raise ValueError("Max retries reached. Unable to generate content.")
+        except Exception as e:
+            # Generic catch for quota or unknown issues
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                print("⚠️ Quota exceeded. Backing off and retrying...")
+                time.sleep(30)
+            else:
+                raise e
+            
+
+def extract_json_block(text):
+    # Extract the content inside the first ```json ... ``` block
+    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    else:
+        return text.strip()
+
+def clean_and_fix_json(text):
+
+
+    text = extract_json_block(text)
+    # # Step 0: Remove any content before ```json
+    # json_start = re.search(r"```json", text)
+    # if json_start:
+    #     text = text[json_start.end():]  # Skip past ```json
+
+    # Step 1: Remove markdown-style ```json ... ```
+    text = re.sub(r"^```json\s*|\s*```$", "", text.strip())
+
+    # Step 2: Convert single quotes to double quotes (only outside lists or numerics)
+    # Naively replace single quotes if double quotes not used (Gemini often returns Python-like dicts)
+    if "'" in text and '"' not in text:
+        text = text.replace("'", '"')
+
+    # Step 3: Remove trailing commas before closing } or ]
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+
+    # Step 4: Replace smart quotes and bad apostrophes
+    text = text.replace("“", '"').replace("”", '"').replace("’", "'")
+
+    # Step 5: Escape unescaped double quotes inside string values
+    def escape_inner_quotes(match):
+        content = match.group(0)
+        key_value = content.split(":", 1)
+        if len(key_value) == 2:
+            key, val = key_value
+            val = val.strip()
+            if val.startswith('"') and val.endswith('"'):
+                inner = val[1:-1]
+                inner = inner.replace('\\"', 'ESCAPED_QUOTE')
+                inner = inner.replace('"', '\\"')
+                inner = inner.replace('ESCAPED_QUOTE', '\\"')
+                return f'{key}: "{inner}"'
+        return content
+
+    text = re.sub(r'"[^"]*"\s*:\s*".*?"', escape_inner_quotes, text)
+
+    return text
+
+def safe_json_parse(text):
+    fixed = clean_and_fix_json(text)
+    try:
+        return json.loads(fixed)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to decode JSON after fixing: \n{fixed}\n{e}") from e
+
+# def safe_json_parse(text, retry_fix=False, original_prompt=None):
+#     try:
+#         # Basic fix attempt
+#         fixed = text.replace("'", '"')
+#         fixed = re.sub(r",\s*}", "}", fixed)
+#         fixed = re.sub(r",\s*]", "]", fixed)
+#         return json.loads(fixed)
+
+#     except json.JSONDecodeError as e:
+#         print("❌ Failed to decode JSON. Trying to fix via re-prompt..." if retry_fix else "❌ Failed to decode JSON.")
+
+#         if retry_fix and original_prompt:
+#             # Append an instruction to the original prompt to get properly formatted JSON
+#             new_prompt = original_prompt + "\n\nPlease reformat your answer strictly as a JSON object using double quotes and no trailing commas."
+#             response = safe_generate_content(new_prompt)
+#             new_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
+#             return safe_json_parse(new_text, retry_fix=False)  # one retry only
+
+#         raise ValueError(f"Failed to decode JSON after fixing: {text}") from e
