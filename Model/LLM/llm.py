@@ -18,17 +18,17 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 import re
 
 class LLMWrapper():
-    def _init_(self,
+    def __init__(self,
                  templates: dict = None,
                  ) -> None:
         self.templates = merge_templates_to_dict() if templates is None else templates
 
 class OpenAIWrapper(LLMWrapper):
-    def _init_(self,
+    def __init__(self,
                  templates: str = None,
                  model: str = 'gpt-3.5-turbo-0125',
                  ) -> None:
-        super()._init_(templates)
+        super().__init__(templates)
         
         self.llm = OpenAI()
         # self.llm = OpenAI(base_url="https://models.inference.ai.azure.com")
@@ -229,7 +229,7 @@ class OpenAIWrapper(LLMWrapper):
 
         if llm == 'gemini':
             print("Using Gemini LLM")
-            system_prompt = system_prompt + 'Please return all dates in ISO format: YYYY-MM-DD (e.g., 2011-12-01). Do not use formats like "December 1, 2011".'
+            system_prompt = system_prompt + 'Please return all dates in ISO format: YYYY-MM-DD (e.g., 2011-12-01). Do not use formats like "December 1, 2011".'
             completed_prompt = f"{system_prompt}\n{user_prompt}"
             response = safe_generate_content(completed_prompt, model_name="gemini-2.0-flash")
             
@@ -319,7 +319,7 @@ def safe_generate_content(prompt, model_name="gemini-2.0-flash", retries=5):
             response = client.models.generate_content(model=model_name, contents=prompt)
             return response
         except ServerError as e:
-            # print(f"⚠ Server overloaded (attempt {attempt+1}/{retries}): {e}")
+            # print(f"⚠️ Server overloaded (attempt {attempt+1}/{retries}): {e}")
             if attempt < retries - 1:
                 wait_time = 2 ** attempt + random.uniform(0, 1)
                 # print(f"Retrying in {wait_time:.1f} seconds...")
@@ -329,15 +329,15 @@ def safe_generate_content(prompt, model_name="gemini-2.0-flash", retries=5):
         except Exception as e:
             # Generic catch for quota or unknown issues
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                print("⚠ Quota exceeded. Backing off and retrying...")
+                print("⚠️ Quota exceeded. Backing off and retrying...")
                 time.sleep(30)
             else:
                 raise e
             
 
 def extract_json_block(text):
-    # Extract the content inside the first json ...  block
-    match = re.search(r"json\s*(.*?)\s*", text, re.DOTALL)
+    # Extract the content inside the first ```json ... ``` block
+    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
     if match:
         return match.group(1).strip()
     else:
@@ -345,13 +345,13 @@ def extract_json_block(text):
 
 def clean_and_fix_json(text):
     text = extract_json_block(text)
-    # # Step 0: Remove any content before json
-    # json_start = re.search(r"json", text)
+    # # Step 0: Remove any content before ```json
+    # json_start = re.search(r"```json", text)
     # if json_start:
-    #     text = text[json_start.end():]  # Skip past json
+    #     text = text[json_start.end():]  # Skip past ```json
 
-    # Step 1: Remove markdown-style json ... 
-    text = re.sub(r"^json\s*|\s*```$", "", text.strip())
+    # Step 1: Remove markdown-style ```json ... ```
+    text = re.sub(r"^```json\s*|\s*```$", "", text.strip())
 
     # Step 2: Convert single quotes to double quotes (only outside lists or numerics)
     # Naively replace single quotes if double quotes not used (Gemini often returns Python-like dicts)
@@ -364,10 +364,10 @@ def clean_and_fix_json(text):
     # Step 4: Replace smart quotes and bad apostrophes
     text = text.replace("“", '"').replace("”", '"').replace("’", "'")
 
-    # Step 5: Fix single-quoted keys: {'key': → {"key":
+    # Step 3: Fix single-quoted keys: {'key': → {"key":
     text = re.sub(r"([{,]\s*)'([^']+?)'\s*:", r'\1"\2":', text)
 
-    # Step 6: Escape unescaped double quotes inside string values
+    # Step 5: Escape unescaped double quotes inside string values
     def escape_inner_quotes(match):
         content = match.group(0)
         key_value = content.split(":", 1)
@@ -382,7 +382,7 @@ def clean_and_fix_json(text):
                 return f'{key}: "{inner}"'
         return content
 
-    text = re.sub(r'"[^"]"\s:\s*".*?"', escape_inner_quotes, text)
+    text = re.sub(r'"[^"]*"\s*:\s*".*?"', escape_inner_quotes, text)
 
     return text
 
