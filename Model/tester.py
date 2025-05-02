@@ -156,11 +156,21 @@ if __name__ == '__main__':
     users = list(all_photos_data.keys())
     print(f"Total users to process: {len(users)}")
     processed_users = 0
+    
+    us = ["Yasser", "Morsy", "Maya", "Mira", "Mazen", "Clara"]
+    our_cnt = len(us)
 
+    print("Choose from:")
+    print("0. Yasser")
+    print("1. Morsy")
+    print("2. Maya")
+    print("3. Mira")
+    print("4. Mazen")
+    print("5. Clara")
+    index = int(input("Enter the index: "))
+    
     # Process each user
-    for user_id in users[:1]:
-        # if user_id == '13485371@N05':
-        #     continue
+    for i, user_id in enumerate(users):
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
