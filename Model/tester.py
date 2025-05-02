@@ -170,7 +170,9 @@ if __name__ == '__main__':
     index = int(input("Enter the index: "))
     
     # Process each user
-    for i, user_id in enumerate(users):
+    for i, user_id in enumerate(users[:5]):
+        if i % our_cnt != index:
+            continue
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
