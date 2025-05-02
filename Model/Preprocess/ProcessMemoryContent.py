@@ -119,7 +119,6 @@ class ProcessMemoryContent():
                         json_data = read_json_file(self.json_data_file_path)
                         data = get_data_of_photo(filename_no_ext, self.raw_data_folder,json_data)
                         gps = data['photo_gps']
-                        print(gps)
                         metadata = self.metadata_extractor.read_metadata_from_image_exiftool(filepath,gps[0],gps[1])
                     else:
                         metadata = self.metadata_extractor.read_metadata_from_image_exiftool(filepath)
