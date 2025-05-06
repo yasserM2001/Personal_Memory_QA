@@ -1,0 +1,1 @@
+// contains the allowed origins for CORS

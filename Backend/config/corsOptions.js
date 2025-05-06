@@ -1,0 +1,1 @@
+// options for passing CORS
