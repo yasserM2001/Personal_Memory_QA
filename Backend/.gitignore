@@ -1,5 +1,39 @@
-# Ignore environment variables file
+# Dependency folders
+node_modules/
+
+# Environment variable files
 .env
 
-# Ignore node modules
-node_modules/
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Build output
+dist/
+build/
+
+# OS-specific files
+.DS_Store      # macOS
+Thumbs.db      # Windows
+
+# Editor or IDE folders
+.vscode/
+.idea/
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.swp
+*.tmp
+*.bak
+
+# Output of npm/yarn
+.yarn/
+.pnp/
