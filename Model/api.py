@@ -5,6 +5,8 @@ import shutil
 import os
 from pathlib import Path
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 DATA_FOLDER = "data"
@@ -20,6 +22,15 @@ IMG_EXT_LIST = {"jpg", "jpeg", "png", "heic"}
 VIDEO_EXT_LIST = {"mp4", "mov", "avi"}
 
 app = FastAPI()
+
+# Add this block to allow requests from your Next.js frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or put the Next.js URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/upload_images")
 async def upload_images(user_id: str = Form(...), files: List[UploadFile] = File(...)):
@@ -53,7 +64,7 @@ async def upload_images(user_id: str = Form(...), files: List[UploadFile] = File
         }
 
 @app.post("/initialize_user_memory")
-async def initialize_user_memory(user_id: str = Form(...)):
+async def initialize_user_memory(user_id: str = Form(...), detect_faces: bool = False):
     """Initializes user memory and processes their uploaded images."""
     uploaded_folder = os.path.join(UPLOAD_FOLDER, user_id)
     processed_folder = os.path.join(PROCESSED_FOLDER, user_id)
@@ -70,7 +81,8 @@ async def initialize_user_memory(user_id: str = Form(...)):
     # Initialize Memory and Process Data
     memory = Memory(raw_folder=uploaded_folder,
                     processed_folder=processed_folder, 
-                    vector_db_folder=vector_db_folder)
+                    vector_db_folder=vector_db_folder,
+                    detect_faces=detect_faces)
     memory.preprocess()
     memory.augment()
 
@@ -82,7 +94,7 @@ async def initialize_user_memory(user_id: str = Form(...)):
         }
 
 @app.post("/answer_query")
-async def answer_query(user_id: str, query: str, method: str = "memory"):
+async def answer_query(user_id: str, query: str, method: str = "memory", detect_faces: bool = False, topk: int = 5):
     """
     Answers user queries based on their processed memory.
     method: "memory" -> Uses query_memory (default)
@@ -98,7 +110,8 @@ async def answer_query(user_id: str, query: str, method: str = "memory"):
     # Load the user's memory without reprocessing
     memory = Memory(raw_folder=os.path.join(UPLOAD_FOLDER, user_id), 
                     processed_folder=user_processed_folder,
-                    vector_db_folder=user_vector_db_folder
+                    vector_db_folder=user_vector_db_folder,
+                    detect_faces=detect_faces
                     )
     try:
         memory.load_processed_memory()
@@ -106,13 +119,13 @@ async def answer_query(user_id: str, query: str, method: str = "memory"):
         raise HTTPException(status_code=500, detail=str(e))
 
     # Initialize QueryHandler
-    query_handler = QueryHandler(memory)
+    query_handler = QueryHandler(memory, detect_faces=detect_faces)
 
     # Use the appropriate query method
     if method == "memory":
-        result = query_handler.query_memory(query)
+        result = query_handler.query_memory(query, topk=topk)
     elif method == "rag":
-        result = query_handler.query_rag(query)
+        result = query_handler.query_rag(query, topk=topk)
     else:
         raise HTTPException(status_code=400, detail="Invalid query method. Use 'memory' or 'rag'.")
 
@@ -122,6 +135,67 @@ async def answer_query(user_id: str, query: str, method: str = "memory"):
         "method": method,
         "response": result
     }
+
+@app.post("/change_face_tag")
+async def change_face_tag(user_id: str = Form(...), face_tag: str = Form(...), new_face_tag: str = Form(...), detect_faces: bool = False):
+    """
+    Change the name of a face tag (e.g., rename a face group).
+    """
+    user_processed_folder = os.path.join(PROCESSED_FOLDER, user_id)
+    user_vector_db_folder = os.path.join(VECTOR_DB_FOLDER, user_id)
+
+    if not os.path.exists(user_processed_folder):
+        raise HTTPException(status_code=400, detail="User memory not found. Please initialize first.")
+
+    memory = Memory(raw_folder=os.path.join(UPLOAD_FOLDER, user_id),
+                    processed_folder=user_processed_folder,
+                    vector_db_folder=user_vector_db_folder,
+                    detect_faces=detect_faces)
+    try:
+        memory.load_processed_memory()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    done = memory.change_face_tag(face_tag, new_face_tag)
+
+    if done:
+        return {
+            "message": f"Face tag '{face_tag}' deleted successfully."
+        }
+    else:
+        return {
+            "message": f"Failed to change the face tag [{face_tag}]"
+        }
+
+@app.post("/delete_face_tag")
+async def delete_face_tag(user_id: str = Form(...), face_tag: str = Form(...), detect_faces: bool = False):
+    """
+    Delete a face group and all associated references.
+    """
+    user_processed_folder = os.path.join(PROCESSED_FOLDER, user_id)
+    user_vector_db_folder = os.path.join(VECTOR_DB_FOLDER, user_id)
+
+    if not os.path.exists(user_processed_folder):
+        raise HTTPException(status_code=400, detail="User memory not found. Please initialize first.")
+
+    memory = Memory(raw_folder=os.path.join(UPLOAD_FOLDER, user_id),
+                    processed_folder=user_processed_folder,
+                    vector_db_folder=user_vector_db_folder,
+                    detect_faces=detect_faces)
+    try:
+        memory.load_processed_memory()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    done = memory.delete_face_tag(face_tag)
+    if done:
+        return {
+            "message": f"Face tag '{face_tag}' deleted successfully."
+        }
+    else:
+        return {
+            "message": f"Failed to delete the face tag [{face_tag}]"
+        }
 
 if __name__ == "__main__":
     import uvicorn
