@@ -6,10 +6,13 @@ import os
 from pathlib import Path
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import base64
 
 
 
 DATA_FOLDER = "data"
+EXTRACTED_FACES = "extracted_faces"
 PROCESSED_FOLDER = os.path.join(DATA_FOLDER, "processed")
 VECTOR_DB_FOLDER = os.path.join(DATA_FOLDER, "vector_db")
 UPLOAD_FOLDER = "uploaded_images"
@@ -85,13 +88,28 @@ async def initialize_user_memory(user_id: str = Form(...), detect_faces: bool = 
                     detect_faces=detect_faces)
     memory.preprocess()
     memory.augment()
+    
+    extracted_faces_folder = os.path.join(processed_folder, "extracted_faces")
+    # Collect extracted face image file paths
+    extracted_faces = []
+    if detect_faces and os.path.exists(extracted_faces_folder):
+        for face_file in os.listdir(extracted_faces_folder):
+            if face_file.lower().split('.')[-1] in IMG_EXT_LIST:
+                face_path = os.path.join(extracted_faces_folder, face_file)
+                with open(face_path, "rb") as f:
+                    encoded_image = base64.b64encode(f.read()).decode("utf-8")
+                    extracted_faces.append({
+                        "filename": face_file,
+                        "base64_image": encoded_image
+                    })
 
-    return {
+    return JSONResponse(content={
         "message": "User memory initialized successfully.",
         "processed_folder": processed_folder,
         "vector_db_folder": vector_db_folder,
-        "memory": memory.memory_content_processed
-        }
+        "memory": memory.memory_content_processed,
+        "extracted_faces": extracted_faces
+    })
 
 @app.post("/answer_query")
 async def answer_query(user_id: str, query: str, method: str = "memory", detect_faces: bool = False, topk: int = 5):
