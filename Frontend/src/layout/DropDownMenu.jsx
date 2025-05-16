@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
 const Dropdown = () => {
-  const [selectedOption, setSelectedOption] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('');
 
   const handleChange = (event) => {
-    setSelectedOption(event.target.value);
+    setSelectedMethod(event.target.value);
     // You can handle what happens when an option is selected
     console.log(`Selected: ${event.target.value}`);
   };
@@ -13,7 +13,7 @@ const Dropdown = () => {
     <div className="flex justify-center items-center p-2">
       <div className="relative">
         <select
-          value={selectedOption}
+          value={selectedMethod}
           onChange={handleChange}
           className="block w-full p-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="" disabled>Select Model</option>
@@ -22,9 +22,9 @@ const Dropdown = () => {
         </select>
 
         {/* Optional: display selected option */}
-        {selectedOption && (
+        {selectedMethod && (
           <div className="mt-2 text-blue-700">
-            <p>You selected: {selectedOption}</p>
+            <p>You selected: {selectedMethod}</p>
           </div>
         )}
       </div>

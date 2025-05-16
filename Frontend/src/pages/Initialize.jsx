@@ -4,9 +4,77 @@ import image from '../assets/imgs/image.png';
 import People from '../layout/People';
 import DropDownMenu from '../layout/DropDownMenu';
 
+const BASE_URL = "http://localhost:5000";
+const USER_ID = "test1";
+
 export default function Initialize() {
   const [showPanel, setShowPanel] = useState(false);
 
+  const [query, setQuery] = useState('');
+  const [method, setMethod] = useState('');
+  const [file, setFile] = useState(null);
+  const [answer, setAnswer] = useState('');
+  const [evidence, setEvidence] = useState(null);
+
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  }
+  const handleUpload = async () => {
+    if (!file)
+      return ("Please Upload your data first")
+    const formData = new FormData();
+    formData.append('file', file)
+
+    const res = await fetch(`${BASE_URL}/model/upload`, {
+      user_id: USER_ID,
+      method: 'POST',
+      body: formData
+    });
+    if (res.ok) {
+      const result = await res.json();
+      setEvidence(result.evidence);
+    } else {
+      alert("Upload failed")
+    }
+  }
+
+  const handleInitialize = async () => {
+    const res = await fetch(`${BASE_URL}/model/initialize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: USER_ID,
+        detect_faces : false
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAnswer(data.answer|| "Initialization successful");
+    } else {
+      setAnswer("Failed to answer , Error occured")
+    }
+  };
+
+    const handleQuery = async () => {
+    const res = await fetch(`${BASE_URL}/model/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: USER_ID,
+        query,
+        method: method || '',
+        detect_faces: false,
+        topk: 5
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAnswer(data.answer);
+    } else {
+      setAnswer("Failed to get the answer , Try again ...")
+    }
+  };
   return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="w-full max-w-sm p-4 bg-opacity-25 bg-slate-900 rounded shadow-md">
@@ -14,8 +82,8 @@ export default function Initialize() {
         {/* File Upload */}
         <div className="mb-4 border-neutral-700 p-4">
           <Label htmlFor="file-upload-helper-text" value="Upload file" className="text-gray-300" />
-          <FileInput id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" />
-          <Button className="bg-blue-800 text-white w-full py-2">Upload</Button>
+          <FileInput multiple id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" onChange={handleFileChange} onClick={handleUpload} />
+          <Button className="bg-blue-800 text-white w-full py-2" onClick={handleInitialize}>Upload</Button>
         </div>
 
         {/* People Button */}
@@ -31,27 +99,27 @@ export default function Initialize() {
         {/* Question Input */}
         <div className="text-center p-4 m-4">
           <Label htmlFor="base" value="Enter your Question" className="font-sans text-gray-300" />
-          <TextInput id="base" type="text" sizing="lg" className="bg-gray-200 border border-gray-300 rounded-md text-black text-lg w-full mt-2" />
+          <TextInput onChange={(e) => setQuery(e.target.value)} id="base" type="text" sizing="lg" className="bg-gray-200 border border-gray-300 rounded-md text-black text-lg w-full mt-2" />
           {/* Choose Model */}
-          <DropDownMenu/>
-        {/* Ask Button */}
-        <Button className="bg-green-600 text-white w-full">Ask</Button>
+          <DropDownMenu selectedMethod={method} setSelectedMethod={setMethod} />
+          {/* Ask Button */}
+          <Button onClick={handleQuery} className="bg-green-600 text-white w-full">Ask</Button>
         </div>
 
 
         {/* Answer Output */}
         <div className="mt-6">
-          <textarea readOnly className="w-full h-40 p-3 border rounded bg-gray-100 focus:outline-none" placeholder="Answer will appear here..." />
+          <textarea readOnly value={answer} className="w-full h-40 p-3 border rounded bg-gray-100 focus:outline-none" placeholder="Answer will appear here..." />
         </div>
 
         {/* Display Image */}
         <div className="mt-4">
-          <img src={image} alt="The evidence" className="w-full h-auto rounded" />
+          {evidence ? <img src={evidence} alt="Uploaded evidence" className="rounded" /> : <img src={image} alt="Placeholder" />}
         </div>
 
-      {/* People Slide-In Panel (External Component) */}
-      <People showPanel={showPanel} setShowPanel={setShowPanel} />
-    </div>
+        {/* People Slide-In Panel (External Component) */}
+        <People showPanel={showPanel} setShowPanel={setShowPanel} />
       </div>
+    </div>
   );
 }
