@@ -12,25 +12,28 @@ export default function Initialize() {
 
   const [query, setQuery] = useState('');
   const [method, setMethod] = useState('');
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [answer, setAnswer] = useState('');
   const [evidence, setEvidence] = useState(null);
 
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    setFiles(e.target.files);
   }
   const handleUpload = async () => {
-    if (!file)
+    if (!files)
       return ("Please Upload your data first")
     const formData = new FormData();
-    formData.append('file', file)
+    formData.append('user_id', USER_ID)
+    Array.from(files).forEach(f => {
+      formData.append('files', f);
+    });
 
     const res = await fetch(`${BASE_URL}/model/upload`, {
-      user_id: USER_ID,
       method: 'POST',
       body: formData
     });
+
     if (res.ok) {
       const result = await res.json();
       setEvidence(result.evidence);
@@ -45,18 +48,18 @@ export default function Initialize() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: USER_ID,
-        detect_faces : false
+        detect_faces: false
       }),
     });
     if (res.ok) {
       const data = await res.json();
-      setAnswer(data.answer|| "Initialization successful");
+      setAnswer(data.answer || "Initialization successful");
     } else {
       setAnswer("Failed to answer , Error occured")
     }
   };
 
-    const handleQuery = async () => {
+  const handleQuery = async () => {
     const res = await fetch(`${BASE_URL}/model/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -82,8 +85,9 @@ export default function Initialize() {
         {/* File Upload */}
         <div className="mb-4 border-neutral-700 p-4">
           <Label htmlFor="file-upload-helper-text" value="Upload file" className="text-gray-300" />
-          <FileInput multiple id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" onChange={handleFileChange} onClick={handleUpload} />
-          <Button className="bg-blue-800 text-white w-full py-2" onClick={handleInitialize}>Upload</Button>
+          <FileInput multiple id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" onChange={handleFileChange} />
+          <Button className="bg-blue-800 text-white w-full py-2" onClick={handleUpload}>Upload</Button>
+          <Button className="bg-blue-800 text-white w-full py-2 my-3" onClick={handleInitialize}>Initialize</Button>
         </div>
 
         {/* People Button */}
