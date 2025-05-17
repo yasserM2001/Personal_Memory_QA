@@ -1,0 +1,1 @@
+Note: You need to create a .env file inside the backend folder. This file should include your database connection string, access and refresh token secrets, and the FastAPI base URL.
