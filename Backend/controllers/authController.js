@@ -39,7 +39,7 @@ const register = async (req, res) => {
     // Respond with created user info
     return res.status(201).json({
       message: "User registered successfully",
-      //   user_id: newUser.user_id, // assuming you're generating it in your model
+      user_num: newUser.user_num,
       email: newUser.email,
       first_name: newUser.first_name,
       last_name: newUser.last_name,
@@ -86,9 +86,11 @@ const login = async (req, res) => {
     });
 
     // Return token to frontend
-    res.json({
+    return res.json({
       accessToken,
+      message: "Logged in successfully",
       user: {
+        user_num: user.user_num,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -123,7 +125,7 @@ const refresh = (req, res) => {
   const cookies = req.cookies;
 
   if (!cookies?.refreshToken) {
-    return res.status(401).json({ message: 'Unauthorized' }); 
+    return res.status(401).json({ message: 'Unauthorized' });
   }
 
   const refreshToken = cookies.refreshToken;
@@ -133,21 +135,21 @@ const refresh = (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     async (err, decoded) => {
       if (err) {
-        return res.status(403).json({ message: 'Forbidden' }); 
+        return res.status(403).json({ message: 'Forbidden' });
       }
 
       try {
         const foundUser = await User.findById(decoded.id).exec();
 
         if (!foundUser) {
-          return res.status(401).json({ message: 'Unauthorized' }); 
+          return res.status(401).json({ message: 'Unauthorized' });
         }
 
         const accessToken = generateToken.generateToken(foundUser._id);
-        return res.json({ accessToken }); 
+        return res.json({ accessToken });
       } catch (error) {
         console.error("Refresh token error:", error);
-        return res.status(500).json({ message: "Server error" }); 
+        return res.status(500).json({ message: "Server error" });
       }
     }
   );
