@@ -4,10 +4,27 @@ import image from '../assets/imgs/image.png';
 import People from '../layout/People';
 import DropDownMenu from '../layout/DropDownMenu';
 
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+
 const BASE_URL = "http://localhost:5000";
-const USER_ID = "test1";
+// const USER_ID = "test1";
 
 export default function Initialize() {
+  const [userNum, setUserNum] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+      navigate("/login");
+    } else {
+      setUserNum(String(user.user_num)); // Set state from localStorage
+    }
+  }, [navigate]);
+
   const [showPanel, setShowPanel] = useState(false);
 
   const [query, setQuery] = useState('');
@@ -23,8 +40,9 @@ export default function Initialize() {
   const handleUpload = async () => {
     if (!files)
       return ("Please Upload your data first")
+
     const formData = new FormData();
-    formData.append('user_id', USER_ID)
+    formData.append('user_id', userNum)
     Array.from(files).forEach(f => {
       formData.append('files', f);
     });
@@ -47,7 +65,7 @@ export default function Initialize() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: USER_ID,
+        user_id: userNum,
         detect_faces: false
       }),
     });
@@ -64,7 +82,7 @@ export default function Initialize() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: USER_ID,
+        user_id: userNum,
         query,
         method: method || '',
         detect_faces: false,
