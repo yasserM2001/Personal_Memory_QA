@@ -2,6 +2,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken");
+const jwt = require("jsonwebtoken");
 
 const register = async (req, res) => {
   try {
@@ -118,9 +119,44 @@ const logout = async (req, res) => {
   }
 };
 
+const refresh = (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.refreshToken) {
+    return res.status(401).json({ message: 'Unauthorized' }); 
+  }
+
+  const refreshToken = cookies.refreshToken;
+
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ message: 'Forbidden' }); 
+      }
+
+      try {
+        const foundUser = await User.findById(decoded.id).exec();
+
+        if (!foundUser) {
+          return res.status(401).json({ message: 'Unauthorized' }); 
+        }
+
+        const accessToken = generateToken.generateToken(foundUser._id);
+        return res.json({ accessToken }); 
+      } catch (error) {
+        console.error("Refresh token error:", error);
+        return res.status(500).json({ message: "Server error" }); 
+      }
+    }
+  );
+};
+
+
 module.exports = {
   register,
   login,
-  // refresh,
+  refresh,
   logout,
 };
