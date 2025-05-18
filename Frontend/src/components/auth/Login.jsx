@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import EmailValidator from "./EmailValidator";
 import { Link } from "react-router-dom";
 
+const BASE_URL = "http://localhost:5000";
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,14 +21,37 @@ export default function Login() {
   };
 
   // on submit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // You can add form validation logic here
+    try {
+      const response = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Redirect to /initialize
-    navigate("/init");
+      const data = await response.json();
+
+      if (response.ok) {
+        // Example: Save token to localStorage or context
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Redirect user
+        navigate('/init');
+      } else {
+        // Show error message
+        alert(data.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen p-6">
@@ -64,14 +89,14 @@ export default function Login() {
               required
             />
           </div>
-                    <div className="text-center mt-4">
-                        <span className="text-sm text-gray-300">
-                            New? Create an account{' '}
-                            <Link to="/register" className="text-indigo-400 hover:underline font-medium">
-                                register
-                            </Link>
-                        </span>
-                    </div>
+          <div className="text-center mt-4">
+            <span className="text-sm text-gray-300">
+              New? Create an account{' '}
+              <Link to="/register" className="text-indigo-400 hover:underline font-medium">
+                register
+              </Link>
+            </span>
+          </div>
 
           {/* Submit Button */}
           <button

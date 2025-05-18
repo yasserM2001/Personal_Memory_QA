@@ -1,17 +1,19 @@
 import { useState, useMemo } from "react"
 import PasswordValidator from "./PasswordValidator";
-import MobileValidator from "./MobileValidator";
+// import MobileValidator from "./MobileValidator";
 import EmailValidator from "./EmailValidator";
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 
+const BASE_URL = "http://localhost:5000";
+
 export default function Register() {
 
-    const [userImage, setUserImage] = useState(null);
+    // const [userImage, setUserImage] = useState(null);
     const navigate = useNavigate();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [mobile, setMobile] = useState('');
+    // const [mobile, setMobile] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -68,15 +70,15 @@ export default function Register() {
         }
     }, [lastName])
 
-    //mobile
-    const handle_mobile_change = (e) => {
-        const text = e.target.value;
+    // //mobile
+    // const handle_mobile_change = (e) => {
+    //     const text = e.target.value;
 
-        if (text.length > 11) {
-            return
-        }
-        setMobile(text);
-    }
+    //     if (text.length > 11) {
+    //         return
+    //     }
+    //     setMobile(text);
+    // }
 
     //email
     const handle_email_change = (e) => {
@@ -90,26 +92,51 @@ export default function Register() {
     //passwordConfiramtion
     const handle_conf_pass_change = e => setPasswordConfirmation(e.target.value);
 
-    const handleSubmit = (e) => {
+    //handle submit
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // You can add form validation here if needed
+        if (firstName && lastName && email && password && passwordConfirmation) {
+            try {
+                const response = await fetch(`${BASE_URL}/auth/register`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        password: password,
+                        confirm_password: passwordConfirmation
+                    })
+                });
 
-        // Example: only navigate if all fields are filled
-        if (firstName && lastName && mobile && email && password && passwordConfirmation) {
-            navigate('/init');
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Navigate or show success message
+                    navigate("/login");
+                } else {
+                    alert(data.message || "Registration failed");
+                }
+            } catch (err) {
+                alert("Server error");
+            }
         } else {
-            alert('Please fill in all required fields');
-        }
-    }
-    //image upload
-    const handleImageUpload = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const imageURL = URL.createObjectURL(file);
-            setUserImage(imageURL);
+            alert("Please fill in all required fields");
         }
     };
+
+
+    //image upload
+    // const handleImageUpload = (event) => {
+    //     const file = event.target.files[0];
+    //     if (file) {
+    //         const imageURL = URL.createObjectURL(file);
+    //         setUserImage(imageURL);
+    //     }
+    // };
 
     return (
         <div className="flex items-center justify-center min-h-screen p-6">
@@ -142,10 +169,10 @@ export default function Register() {
                     </div>
 
                     {/* User Upload picture */}
-                    <div className="space-y-4">
+                    {/* <div className="space-y-4">
                         <div className="flex items-center space-x-4">
-                            {/* File Input */}
-                            <div>
+                            File Input */}
+                    {/* <div>
                                 <label htmlFor="userImage" className="block text-sm font-medium text-white">Profile Picture</label>
                                 <input
                                     id="userImage"
@@ -154,10 +181,10 @@ export default function Register() {
                                     onChange={handleImageUpload}
                                     className="w-full p-2 bg-gray-700 border border-gray-600 text-white rounded"
                                 />
-                            </div>
+                            </div> */}
 
-                            {/* Image Preview */}
-                            {userImage && (
+                    {/* Image Preview */}
+                    {/* {userImage && (
                                 <div className="mt-2">
                                     <img
                                         src={userImage}
@@ -167,13 +194,13 @@ export default function Register() {
                                 </div>
                             )}
                         </div>
-                    </div>
-                    {/* Mobile number */}
+                    </div> */}
+                    {/* Mobile number
                     <div>
                         <label htmlFor="mobile" className="block mb-2 text-sm font-medium text-white">Mobile</label>
                         <input value={mobile} onChange={handle_mobile_change} type="text" id="mobile" className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Mobile" />
                         <MobileValidator mobile={mobile} />
-                    </div>
+                    </div> */}
 
                     {/* Email */}
                     <div>
