@@ -16,25 +16,11 @@ export default function TopNav() {
   },[]);
 
   const handleLogOut = async () => {
-    try{
-      const response = await fetch(`${BASE_URL}/logout` ,{
-        method : 'POST',
-        credentials : 'include',
-      });
-      if(response.ok){
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        setIsLoggedIn(false);
-        navigate('/');
-      }else{
-        const data = await response.json();
-        alert (data.message || 'Logout Failed');
-      }
-    }catch(error){
-      console.log('Logout Error' , error)
-      alert('An error occurred . please try again');
-    }
+    localStorage.clear();
+    setIsLoggedIn(false);
+    navigate('/');
   };
+  
   return (
     <nav className='p-5 sticky top-0 z-50 bg-gray-900 text-gray-100 flex justify-evenly'>
       <Link to='/'>Home</Link>
