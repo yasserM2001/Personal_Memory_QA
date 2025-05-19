@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 
 
 const BASE_URL = "http://localhost:5000";
-// const USER_ID = "test1";
 
 export default function Initialize() {
   const [userNum, setUserNum] = useState(null);
@@ -98,14 +97,18 @@ export default function Initialize() {
   };
   return (
     <div className="flex justify-center items-center min-h-screen">
-      <div className="w-full max-w-sm p-4 bg-opacity-25 bg-slate-900 rounded shadow-md">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl p-4 bg-opacity-25 bg-slate-900 rounded shadow-md">
 
         {/* File Upload */}
         <div className="mb-4 border-neutral-700 p-4">
-          <Label htmlFor="file-upload-helper-text" value="Upload file" className="text-gray-300" />
-          <FileInput multiple id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" onChange={handleFileChange} />
-          <Button className="bg-blue-800 text-white w-full py-2" onClick={handleUpload}>Upload</Button>
-          <Button className="bg-blue-800 text-white w-full py-2 my-3" onClick={handleInitialize}>Initialize</Button>
+          <div className='flex items-center gap-2'>
+            <div className='h-full w-full'>
+              <Label htmlFor="file-upload-helper-text" value="Upload file" className="text-gray-300" />
+              <FileInput multiple id="file-upload-helper-text" helperText="SVG, PNG, JPG or GIF." className="w-full" onChange={handleFileChange} />
+            </div>
+            <Button className="bg-blue-800 text-white w-25 py-2 h-full" onClick={handleUpload}>Upload</Button>
+          </div>
+          <Button className="bg-blue-600 text-white py-2 mx-auto block my-auto" onClick={handleInitialize}>Initialize</Button>
         </div>
 
         {/* People Button */}
@@ -120,12 +123,14 @@ export default function Initialize() {
 
         {/* Question Input */}
         <div className="text-center p-4 m-4">
-          <Label htmlFor="base" value="Enter your Question" className="font-sans text-gray-300" />
-          <TextInput onChange={(e) => setQuery(e.target.value)} id="base" type="text" sizing="lg" className="bg-gray-200 border border-gray-300 rounded-md text-black text-lg w-full mt-2" />
           {/* Choose Model */}
           <DropDownMenu selectedMethod={method} setSelectedMethod={setMethod} />
+          <Label htmlFor="base" value="Enter your Question" className="font-sans text-gray-300" />
+          <div className='flex items-center gap-2'>
+            <TextInput onChange={(e) => setQuery(e.target.value)} id="base" type="text" sizing="lg" className="bg-gray-200 border border-gray-300 rounded-md text-black text-lg w-full" />
+            <Button onClick={handleQuery} className="bg-green-400 text-white px-4 py-2 whitespace-nowrap">Ask</Button>
+          </div>
           {/* Ask Button */}
-          <Button onClick={handleQuery} className="bg-green-600 text-white w-full">Ask</Button>
         </div>
 
 
