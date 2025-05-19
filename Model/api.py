@@ -152,9 +152,9 @@ async def answer_query(payload: AnswerQueryRequest):
     query_handler = QueryHandler(memory, detect_faces=detect_faces)
 
     if method == "memory":
-        result = query_handler.query_memory(query, topk=topk)
+        result = query_handler.query_memory(query, topk=topk, llm="gemini")
     elif method == "rag":
-        result = query_handler.query_rag(query, topk=topk)
+        result = query_handler.query_rag(query, topk=topk, llm="gemini")
     else:
         raise HTTPException(status_code=400, detail="Invalid query method. Use 'memory' or 'rag'.")
 
