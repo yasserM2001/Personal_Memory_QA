@@ -196,3 +196,18 @@ class FaceGrouper:
             plt.show()
         else:
             print(f"Group {group_id} does not exist.")
+
+    def delete_group(self, group_id):
+        if group_id not in self.grouped_faces:
+            print(f"Group {group_id} does not exist.")
+            return False
+
+        # Remove group data
+        del self.grouped_faces[group_id]
+
+        if group_id in self.group_to_images:
+            del self.group_to_images[group_id]
+
+        self.save_all()
+        print(f"Group '{group_id}' and associated data deleted.")
+        return True

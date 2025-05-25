@@ -140,14 +140,20 @@ class QueryHandler():
         if location != "":
             emb = self.llm.calculate_embeddings(location)
             emb = np.array(emb).reshape(-1, 1)
-            similarities = np.matmul(self.location_vector, emb).flatten()
+            if (self.location_vector is None or 
+                not isinstance(self.location_vector, np.ndarray) or 
+                self.location_vector.size == 0 or
+                len(self.location_list) == 0):
+                pass
+            else:
+                similarities = np.matmul(self.location_vector, emb).flatten()
 
-            top_k_location = np.argsort(similarities)[-location_topk:][::-1]
-            retrieved_location = [self.location_list[i] for i in top_k_location]
+                top_k_location = np.argsort(similarities)[-location_topk:][::-1]
+                retrieved_location = [self.location_list[i] for i in top_k_location]
 
-            for location in retrieved_location:
-                memory_id = location['memory_ids']
-                filtered_memory_list = list(set(filtered_memory_list + memory_id))
+                for location in retrieved_location:
+                    memory_id = location['memory_ids']
+                    filtered_memory_list = list(set(filtered_memory_list + memory_id))
 
         ####################### filter faces
         if self.detect_faces:
@@ -163,7 +169,11 @@ class QueryHandler():
 
         ####################### filter caption
         query_emb = self.llm.calculate_embeddings(query)
+        if query_emb is None or len(query_emb) == 0:
+            raise ValueError("Query embedding is empty or None. Please check the input query.")
+        
         query_emb = np.array(query_emb).reshape(-1, 1)
+
         similarities = np.matmul(self.caption_vector, query_emb).flatten()
 
         top_k_caption = np.argsort(similarities)[-topk:][::-1]
@@ -175,13 +185,14 @@ class QueryHandler():
 
 
         ####################### filter text
-        similarities = np.matmul(self.text_vector, query_emb).flatten()
-        top_k_text = np.argsort(similarities)[-text_topk:][::-1]
-        retrieved_text = [self.text[i] for i in top_k_text]
+        if self.text_vector is not None and len(self.text_vector) != 0:
+            similarities = np.matmul(self.text_vector, query_emb).flatten()
+            top_k_text = np.argsort(similarities)[-text_topk:][::-1]
+            retrieved_text = [self.text[i] for i in top_k_text]
 
-        for text in retrieved_text:
-            memory_id = text['memory_ids']
-            filtered_memory_list = list(set(filtered_memory_list + memory_id))
+            for text in retrieved_text:
+                memory_id = text['memory_ids']
+                filtered_memory_list = list(set(filtered_memory_list + memory_id))
 
         if strict_filtered_memory:
             # only keep the memories that are in both lists

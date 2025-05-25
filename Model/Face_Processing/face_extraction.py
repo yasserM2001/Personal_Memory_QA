@@ -151,3 +151,9 @@ class FaceProcessor:
                 image_to_faces_map[image].append(group)
         
         return image_to_faces_map
+    
+    def delete_group(self, group_id):
+        if self.face_grouper is None:
+            raise ValueError("Face Grouper is None from face_extraction in delete.")
+        
+        self.face_grouper.delete_group(group_id)

@@ -122,9 +122,9 @@ class AugmentContext():
         activities_list_path = os.path.join(self.vector_db_folder,'activities_list.json')
 
         if os.path.exists(objects_vector_db_path):
-            self.objects_vector = np.load(objects_vector_db_path)
-            self.people_vector = np.load(people_vector_db_path)
-            self.activities_vector = np.load(activities_vector_db_path)
+            self.objects_vector = np.load(objects_vector_db_path, allow_pickle=True)
+            self.people_vector = np.load(people_vector_db_path, allow_pickle=True)
+            self.activities_vector = np.load(activities_vector_db_path, allow_pickle=True)
 
             with open(objects_list_path, 'r') as f:
                 self.objects_list = json.load(f)
@@ -185,7 +185,7 @@ class AugmentContext():
         location_list_path = os.path.join(self.vector_db_folder,'location_list.json')
 
         if os.path.exists(location_vector_db_path):
-            self.location_vector_db = np.load(location_vector_db_path)
+            self.location_vector_db = np.load(location_vector_db_path, allow_pickle=True)
             with open(location_list_path, 'r') as f:
                 self.location_list = json.load(f)
             return
@@ -235,7 +235,7 @@ class AugmentContext():
         text_list_path = os.path.join(self.vector_db_folder,'text_list.json')
 
         if os.path.exists(text_vector_db_path):
-            self.text_vector_db = np.load(text_vector_db_path)
+            self.text_vector_db = np.load(text_vector_db_path, allow_pickle=True)
             with open(text_list_path, 'r') as f:
                 self.text_list = json.load(f)
             return
@@ -295,7 +295,7 @@ class AugmentContext():
         save_path_list = os.path.join(self.vector_db_folder,'caption_list.json')
 
         if os.path.exists(save_path_vector_db):
-            self.caption_vector_db = np.load(save_path_vector_db)
+            self.caption_vector_db = np.load(save_path_vector_db, allow_pickle=True)
             with open(save_path_list, 'r') as f:
                 self.caption_list = json.load(f)
             return
@@ -444,10 +444,10 @@ class AugmentContext():
         knowledge_list_path = os.path.join(self.vector_db_folder,'knowledge_list.json')
 
         if os.path.exists(composite_vector_db_path):
-            self.composite_context_embeddings = np.load(composite_vector_db_path)
+            self.composite_context_embeddings = np.load(composite_vector_db_path, allow_pickle=True)
             with open(composite_list_path, 'r') as f:
                 self.composite_context = json.load(f)
-            self.knowledge_embeddings = np.load(knowledge_vector_db_path)
+            self.knowledge_embeddings = np.load(knowledge_vector_db_path, allow_pickle=True)
             with open(knowledge_list_path, 'r') as f:
                 self.knowledge = json.load(f)
             return
@@ -492,7 +492,7 @@ class AugmentContext():
         save_path_list = os.path.join(self.vector_db_folder,'vector_db_list.json')
 
         if os.path.exists(save_path_vector_db):
-            self.vector_db_rag = np.load(save_path_vector_db)
+            self.vector_db_rag = np.load(save_path_vector_db, allow_pickle=True)
             with open(save_path_list, 'r') as f:
                 self.vector_db_list = json.load(f)
             return
