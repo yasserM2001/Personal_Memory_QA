@@ -75,10 +75,10 @@ const login = async (req, res) => {
     const accessToken = generateToken.generateToken(user._id);
 
     // // Optional: Generate refresh token
-    const refreshToken = generateToken.generateRefreshToken(user._id);
+   //const refreshToken = generateToken.generateRefreshToken(user._id);
 
     // Optional: Set refresh token in secure cookie
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: true, // only true in production with HTTPS
       sameSite: "Strict",
@@ -87,8 +87,8 @@ const login = async (req, res) => {
 
     // Return token to frontend
     return res.json({
-      accessToken,
       message: "Logged in successfully",
+      token: accessToken,
       user: {
         user_num: user.user_num,
         email: user.email,
@@ -102,16 +102,20 @@ const login = async (req, res) => {
   }
 };
 
+
 const logout = async (req, res) => {
   try {
     const cookies = req.cookies;
 
-    if (!cookies?.refreshToken) return res.sendStatus(204); //No content
-    // Clear the refresh token cookie
-    res.clearCookie("refreshToken", {
+    if (!cookies?.accessToken)
+      return res.sendStatus(204);
+
+    // Clear the access token cookie
+    res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: true, // only true in production with HTTPS
+      secure: true, // set to true in production with HTTPS
       sameSite: "Strict",
+      path: "/",
     });
 
     return res.status(200).json({ message: "Logged out successfully" });

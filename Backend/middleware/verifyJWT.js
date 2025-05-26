@@ -1,17 +1,20 @@
 // here we are going to verify the JWT token
 const jwt = require("jsonwebtoken");
 
-const verifyJWT = (req, res, next) => {
-  const authHeader = req.headers.authorization || req.headers.Authorization; // "Bearer token"
 
-  if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
+const verifyJWT = (req, res, next) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    return res.status(401).json({ message: "No token. Authorization denied." });
   }
-  const token = authHeader.split(" ")[1]; // ["Bearer","token"]
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: "Forbidden" });
-    req.user = decoded.id;
+
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    req.user = decoded;
     next();
-  });
+  } catch (err) {
+    return res.status(403).json({ message: "Unauthorized: Invalid or expired token." });
+  }
 };
 module.exports = verifyJWT;
