@@ -311,7 +311,7 @@ from google.genai.errors import ServerError
 import random
 import time
 
-def safe_generate_content(prompt, model_name="gemini-2.0-flash", retries=5):
+def safe_generate_content(prompt, model_name="gemini-2.0-flash", retries=4):
     client = genai.Client(api_key=gemini_api_key)
 
     for attempt in range(retries):

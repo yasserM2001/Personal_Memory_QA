@@ -173,11 +173,12 @@ if __name__ == '__main__':
     for i, user_id in enumerate(users):
         if i % our_cnt != index:
             continue
+        if user_id == "35237092727@N01":
+            continue
         safe_user_id = user_id.replace('@', '_').replace('/', '_')
         print(f"\n{'='*50}")
         print(f"Processing user: {user_id}")
         print(f"{'='*50}")
-        
         try:
             # 1. Download photos
             print("\n[1/3] Downloading photos...")
