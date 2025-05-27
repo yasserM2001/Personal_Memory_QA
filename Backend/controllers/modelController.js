@@ -1,8 +1,25 @@
 //handles calls to Python model API
 // is connected with pythonAPI.js then and it will be done after the authentication and authorization is done
 const path = require("path");
-
 const pythonApi = require("../services/pythonAPI");
+const fs = require('fs');
+
+const saveFacesToDisk = (faces, userId) => {
+  const folderPath = path.join('saved_faces', userId);
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+
+  faces.forEach(face => {
+    const filePath = path.join(folderPath, face.filename);
+    const base64Data = face.base64_image.replace(/^data:image\/\w+;base64,/, "");
+    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+   const relativePath = path.join('saved_faces', userId, face.filename);
+    savedPaths.push(relativePath);
+  });
+
+  return savedPaths;
+};
 
 const uploadHandler = async (req, res) => {
   try {
@@ -35,8 +52,13 @@ const initializeHandler = async (req, res) => {
 
     // Call the function from pythonAPI.js
     const result = await pythonApi.initializeMemory(user_id, detect_faces);
-
-    res.json(result);
+    if (result.extracted_faces && result.extracted_faces.length > 0) {
+      savedImagePaths = saveFacesToDisk(result.extracted_faces, user_id);      
+    }
+    res.json({
+      ...result,
+      saved_image_paths: savedImagePaths
+    });    
   } catch (error) {
     console.error("Error in initializeHandler:", error);
     res.status(500).json({ error: error.message });
@@ -48,6 +70,7 @@ const queryHandler = async (req, res) => {
     // Add validation for req.body
     if (!req.body) {
       return res.status(400).json({ error: "Request body is missing" });
+      
     }
 
     const { user_id, query, method, detect_faces, topk } = req.body;
