@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "http://localhost:5500";
 const USER_ID = "test1";
 
 export default function People({ showPanel, setShowPanel }) {

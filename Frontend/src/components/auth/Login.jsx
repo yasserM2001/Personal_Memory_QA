@@ -2,13 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EmailValidator from "./EmailValidator";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import { useContext } from "react";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "http://localhost:5500";
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+
+  const {login} = useContext(AuthContext);
 
   // email
   const handle_email_change = (e) => {
@@ -37,9 +41,9 @@ export default function Login() {
 
       if (response.ok) {
         // Example: Save token to localStorage or context
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
+        // localStorage.setItem('accessToken', data.accessToken);
+        // localStorage.setItem('user', JSON.stringify(data.user));
+        login(data.user , data.token)
         // Redirect user
         navigate('/init');
       } else {
