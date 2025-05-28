@@ -6,6 +6,8 @@ const fs = require('fs');
 
 const saveFacesToDisk = (faces, userId) => {
   const folderPath = path.join('saved_faces', userId);
+  const savedPaths = [];
+  
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath, { recursive: true });
   }
