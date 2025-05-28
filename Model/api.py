@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from numpy import extract
 from Preprocess.memory import Memory
 from Query.query import QueryHandler
 import shutil
@@ -113,19 +114,7 @@ async def initialize_user_memory(payload: InitMemoryRequest):
     if detect_faces and os.path.exists(extracted_faces_folder):
         # read grouped faces from JSON file
         if os.path.exists(grouped_faces_file):
-            with open(grouped_faces_file, "r") as f:
-                grouped_faces = json.load(f)
-            for face_tag, face_files in grouped_faces.items():
-                face_file = face_files[0]
-                face_path = os.path.join(extracted_faces_folder, face_file)
-                if os.path.exists(face_path):
-                    with open(face_path, "rb") as f:
-                        encoded_image = base64.b64encode(f.read()).decode("utf-8")
-                        extracted_faces.append({
-                            "filename": face_file,
-                            "face_tag": face_tag,
-                            "base64_image": encoded_image
-                        })
+            extracted_faces = read_grouped_faces(grouped_faces_file, extracted_faces_folder)
 
     return JSONResponse(content={
         "message": "User memory initialized successfully.",
@@ -134,6 +123,23 @@ async def initialize_user_memory(payload: InitMemoryRequest):
         "memory": memory.memory_content_processed,
         "extracted_faces": extracted_faces
     })
+
+def read_grouped_faces(grouped_faces_file, extracted_faces_folder):
+    extracted_faces = []
+    with open(grouped_faces_file, "r") as f:
+        grouped_faces = json.load(f)
+    for face_tag, face_files in grouped_faces.items():
+        face_file = face_files[0]
+        face_path = os.path.join(extracted_faces_folder, face_file)
+        if os.path.exists(face_path):
+            with open(face_path, "rb") as f:
+                encoded_image = base64.b64encode(f.read()).decode("utf-8")
+                extracted_faces.append({
+                    "filename": face_file,
+                    "face_tag": face_tag,
+                    "base64_image": encoded_image
+                })
+    return extracted_faces
 
 @app.post("/answer_query")
 async def answer_query(payload: AnswerQueryRequest):
@@ -197,8 +203,17 @@ async def change_face_tag(payload: ChangeFaceTagRequest):
 
     done = memory.change_face_tag(face_tag, new_face_tag)
 
+    extracted_faces_folder = os.path.join(user_processed_folder, "extracted_faces")
+    grouped_faces_file = os.path.join(user_processed_folder, "grouped_faces", "grouped_faces.json")
+    extracted_faces = []
+    if done and os.path.exists(extracted_faces_folder) and os.path.exists(grouped_faces_file):
+        extracted_faces = read_grouped_faces(grouped_faces_file, extracted_faces_folder)
+
     if done:
-        return {"message": f"Face tag '{face_tag}' changed to '{new_face_tag}' successfully."}
+        return {
+            "message": f"Face tag '{face_tag}' changed to '{new_face_tag}' successfully.",
+            "extracted_faces": extracted_faces, 
+        }
     else:
         return {"message": f"Failed to change the face tag [{face_tag}]"}
 
@@ -223,8 +238,17 @@ async def delete_face_tag(payload: DeleteFaceTagRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     done = memory.delete_face_tag(face_tag)
+    extracted_faces_folder = os.path.join(user_processed_folder, "extracted_faces")
+    grouped_faces_file = os.path.join(user_processed_folder, "grouped_faces", "grouped_faces.json")
+    extracted_faces = []
+    if done and os.path.exists(extracted_faces_folder) and os.path.exists(grouped_faces_file):
+        extracted_faces = read_grouped_faces(grouped_faces_file, extracted_faces_folder)
+
     if done:
-        return {"message": f"Face tag '{face_tag}' deleted successfully."}
+        return {
+            "message": f"Face tag '{face_tag}' deleted successfully.",
+            "extracted_faces": extracted_faces,
+        }
     else:
         return {"message": f"Failed to delete the face tag [{face_tag}]"}
 
