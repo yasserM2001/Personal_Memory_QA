@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import base64
 from pydantic import BaseModel
+import json
 
 
 DATA_FOLDER = "data"
@@ -106,17 +107,25 @@ async def initialize_user_memory(payload: InitMemoryRequest):
     memory.augment()
 
     extracted_faces_folder = os.path.join(processed_folder, "extracted_faces")
+    grouped_faces_file = os.path.join(processed_folder, "grouped_faces", "grouped_faces.json") 
+
     extracted_faces = []
     if detect_faces and os.path.exists(extracted_faces_folder):
-        for face_file in os.listdir(extracted_faces_folder):
-            if face_file.lower().split('.')[-1] in IMG_EXT_LIST:
+        # read grouped faces from JSON file
+        if os.path.exists(grouped_faces_file):
+            with open(grouped_faces_file, "r") as f:
+                grouped_faces = json.load(f)
+            for face_tag, face_files in grouped_faces.items():
+                face_file = face_files[0]
                 face_path = os.path.join(extracted_faces_folder, face_file)
-                with open(face_path, "rb") as f:
-                    encoded_image = base64.b64encode(f.read()).decode("utf-8")
-                    extracted_faces.append({
-                        "filename": face_file,
-                        "base64_image": encoded_image
-                    })
+                if os.path.exists(face_path):
+                    with open(face_path, "rb") as f:
+                        encoded_image = base64.b64encode(f.read()).decode("utf-8")
+                        extracted_faces.append({
+                            "filename": face_file,
+                            "face_tag": face_tag,
+                            "base64_image": encoded_image
+                        })
 
     return JSONResponse(content={
         "message": "User memory initialized successfully.",
