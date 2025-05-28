@@ -39,6 +39,7 @@ const register = async (req, res) => {
     // Respond with created user info
     return res.status(201).json({
       message: "User registered successfully",
+      _id: user._id,
       user_num: newUser.user_num,
       email: newUser.email,
       first_name: newUser.first_name,
@@ -74,10 +75,6 @@ const login = async (req, res) => {
     // Generate access token
     const accessToken = generateToken.generateToken(user._id);
 
-    // // Optional: Generate refresh token
-   //const refreshToken = generateToken.generateRefreshToken(user._id);
-
-    // Optional: Set refresh token in secure cookie
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: true, // only true in production with HTTPS
@@ -90,6 +87,7 @@ const login = async (req, res) => {
       message: "Logged in successfully",
       token: accessToken,
       user: {
+        _id: user._id,
         user_num: user.user_num,
         email: user.email,
         first_name: user.first_name,
@@ -125,44 +123,8 @@ const logout = async (req, res) => {
   }
 };
 
-const refresh = (req, res) => {
-  const cookies = req.cookies;
-
-  if (!cookies?.refreshToken) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  const refreshToken = cookies.refreshToken;
-
-  jwt.verify(
-    refreshToken,
-    process.env.REFRESH_TOKEN_SECRET,
-    async (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-
-      try {
-        const foundUser = await User.findById(decoded.id).exec();
-
-        if (!foundUser) {
-          return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        const accessToken = generateToken.generateToken(foundUser._id);
-        return res.json({ accessToken });
-      } catch (error) {
-        console.error("Refresh token error:", error);
-        return res.status(500).json({ message: "Server error" });
-      }
-    }
-  );
-};
-
-
 module.exports = {
   register,
   login,
-  refresh,
   logout,
 };
