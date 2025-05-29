@@ -108,7 +108,7 @@ export default function Initialize() {
 
           return {
             id: index + 1,
-            face_tag: `face_${index + 1}`,
+            face_tag: data.extracted_faces[index]?.face_tag || `face_${index + 1}`,
             imageUrl: imageUrl,
             imagePath: imagePath
           };
