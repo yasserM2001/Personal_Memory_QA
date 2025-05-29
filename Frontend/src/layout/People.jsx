@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axios';
 
-const BASE_URL = "http://localhost:5500";
-
 export default function People({ showPanel, setShowPanel, extractedFaces = [], currentUser }) {
   const [faces, setFaces] = useState([]);
   const [peopleNames, setPeopleNames] = useState({});
   const [isEditing, setIsEditing] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Update faces when extractedFaces prop changes
   useEffect(() => {
@@ -20,6 +19,13 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
       setPeopleNames(names);
     }
   }, [extractedFaces]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleNameChange = (index, name) => {
     setPeopleNames((prev) => ({
@@ -58,11 +64,14 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
         updatedFaces[index].face_tag = newTag;
         setFaces(updatedFaces);
         console.log("Face tag updated successfully");
+        setError('Face tag updated successfully');
       } else {
         console.log("Failed to rename FaceTag");
+        setError('Failed to rename FaceTag');
       }
     } catch (error) {
       console.log("Error updating face tag:", error);
+      setError('Error updating face tag')
     } finally {
       setIsLoading(false);
     }
@@ -86,11 +95,14 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
         delete newNames[index];
         setPeopleNames(newNames);
         console.log("Face deleted successfully");
+        setError('Face deleted successfully');
       } else {
         console.log("Failed to delete face");
+        setError('Failed to delete face');
       }
     } catch (error) {
       console.log("Error deleting face:", error);
+      setError('Error deleting face');
     } finally {
       setIsLoading(false);
     }
@@ -193,9 +205,17 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
           </div>
         )}
 
+        {error && (
+          <div className={`mb-4 p-2 rounded text-sm text-center font-semibold ${error.toLowerCase().includes('success') ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}>
+            {error}
+          </div>
+        )}
+
         <p className="text-lg font-semibold text-purple-400 mt-4 mb-4 text-center">
           {faces.length > 0 ? 'Click to name each person' : 'No faces detected'}
         </p>
+
 
         <div className="flex flex-wrap justify-center">
           {renderUserCircles()}

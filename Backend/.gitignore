@@ -37,3 +37,6 @@ coverage/
 # Output of npm/yarn
 .yarn/
 .pnp/
+
+
+saved_faces/

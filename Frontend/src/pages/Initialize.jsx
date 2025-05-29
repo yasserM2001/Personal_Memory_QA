@@ -98,7 +98,7 @@ export default function Initialize() {
         // Convert saved image paths to face objects
         const faces = data.saved_image_paths.map((imagePath, index) => {
           // Remove any leading slashes or backslashes and normalize path separators
-          const normalizedPath = imagePath.replace(/^[\/\\]+/, '').replace(/\\/g, '/');
+          const normalizedPath = imagePath.replace(/^[/\\]+/, '').replace(/\\/g, '/');
 
           // Since savedPaths already includes 'saved_faces/userId/filename.jpg'
           // we just need to prepend the base URL
