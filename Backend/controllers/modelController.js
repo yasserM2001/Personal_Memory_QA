@@ -4,7 +4,7 @@ const pythonApi = require("../services/pythonAPI");
 const fs = require('fs');
 
 const saveFacesToDisk = (faces, userId) => {
-  const folderPath = path.join('saved_faces', userId);
+  const folderPath = path.join('photos', userId, 'saved_faces');
   const savedPaths = [];
 
   // Create folder if it doesn't exist
@@ -106,7 +106,41 @@ const queryHandler = async (req, res) => {
       detect_faces || false,
       topk || 5
     );
-    res.json(result);
+    const evidence = result.memory_photos || [];
+    let savedImagePaths = [];
+    if (evidence.length > 0) {
+      const folderPath = path.join('photos', user_id, 'evidence');
+      // Create folder if it doesn't exist
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, { recursive: true });
+      }
+      // Clean up existing evidence files for this user
+      try {
+        const existingFiles = fs.readdirSync(folderPath);
+        existingFiles.forEach(file => {
+          // Only delete image files (safety check)
+          if (file.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            const filePath = path.join(folderPath, file);
+            fs.unlinkSync(filePath);
+          }
+        });
+        console.log(`Cleaned up ${existingFiles.length} old evidence files for user ${user_id}`);
+      } catch (error) {
+        console.error(`Error cleaning up old evidence for user ${user_id}:`, error);
+      }
+      evidence.forEach((photo) => {
+        const filePath = path.join(folderPath, photo.memory_id);
+        const base64Data = photo.base64_image.replace(/^data:image\/\w+;base64,/, "");
+        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+        savedImagePaths.push(filePath);
+      });
+    }
+
+    res.json({
+      ...result,
+      evidence: savedImagePaths
+    });
+
   } catch (error) {
     console.error("Error in queryHandler:", error);
     res.status(500).json({ error: error.message });

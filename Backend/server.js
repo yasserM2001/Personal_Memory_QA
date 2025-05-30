@@ -15,7 +15,7 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 
-app.use('/saved_faces', express.static(path.join(__dirname, 'saved_faces')));
+app.use('/photos', express.static(path.join(__dirname, 'photos')));
 // app.use('/', require('./routes/root'));
 app.use('/auth', require('./routes/authRoutes'));
 // app.use('/users', require('./routes/userRoutes'));

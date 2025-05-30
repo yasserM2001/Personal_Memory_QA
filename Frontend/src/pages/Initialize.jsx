@@ -27,8 +27,11 @@ export default function Initialize() {
   const [files, setFiles] = useState([]);
   const [answer, setAnswer] = useState('');
   const [evidence, setEvidence] = useState(null);
+  const [evidencePhotos, setEvidencePhotos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
 
   // New state for extracted faces
   const [extractedFaces, setExtractedFaces] = useState([]);
@@ -85,26 +88,17 @@ export default function Initialize() {
 
       const data = res.data;
 
-      // Set the response message
-      // setAnswer(data.message || "Initialization successful");
-
       // Store the full initialization data
       setInitializationData(data);
 
       // Handle extracted faces
       if (data.saved_image_paths && data.saved_image_paths.length > 0) {
-        console.log('Saved image paths:', data.saved_image_paths); // Debug log
+        console.log('Saved image paths:', data.saved_image_paths);
 
         // Convert saved image paths to face objects
         const faces = data.saved_image_paths.map((imagePath, index) => {
-          // Remove any leading slashes or backslashes and normalize path separators
           const normalizedPath = imagePath.replace(/^[/\\]+/, '').replace(/\\/g, '/');
-
-          // Since savedPaths already includes 'saved_faces/userId/filename.jpg'
-          // we just need to prepend the base URL
           const imageUrl = `http://localhost:5500/${normalizedPath}`;
-
-          console.log(`Face ${index + 1} URL:`, imageUrl); // Debug log
 
           return {
             id: index + 1,
@@ -115,15 +109,12 @@ export default function Initialize() {
         });
 
         setExtractedFaces(faces);
-
-        // Automatically open the People panel when faces are found
         setShowPanel(true);
       } else if (data.extracted_faces && data.extracted_faces.length > 0) {
-        // Fallback to extracted_faces if saved_image_paths is not available
         const faces = data.extracted_faces.map((face, index) => ({
           id: index + 1,
           face_tag: `face_${index + 1}`,
-          imageUrl: face, // Assuming this contains the image URL or path
+          imageUrl: face,
           imagePath: face
         }));
         setExtractedFaces(faces);
@@ -146,6 +137,7 @@ export default function Initialize() {
 
     setIsLoading(true);
     setError('');
+    setEvidencePhotos([]); // Clear previous evidence
 
     try {
       const res = await axios.post('/model/query', {
@@ -156,13 +148,135 @@ export default function Initialize() {
         topk: 5
       });
 
-      setAnswer(res.data.response.answer);
+      console.log('🔍 Query response:', res.data);
+
+      // Set the answer
+      setAnswer(res.data.response?.answer || res.data.answer || "No answer received");
+
+      // Handle evidence photos
+      if (res.data.evidence && res.data.evidence.length > 0) {
+        console.log('📷 Evidence photos found:', res.data.evidence.length);
+
+        // Convert file paths to URLs
+        const photoUrls = res.data.evidence.map((filePath, index) => {
+          // Extract filename from full path
+          const filename = filePath.split(/[/\\]/).pop();
+          // Create URL for serving the image
+          const imageUrl = `http://localhost:5500/photos/${currentUser._id}/evidence/${filename}`;
+
+          console.log(`Evidence ${index + 1}:`, imageUrl);
+
+          return {
+            id: index + 1,
+            filename: filename,
+            imageUrl: imageUrl,
+            filePath: filePath
+          };
+        });
+
+        setEvidencePhotos(photoUrls);
+        // Set the first photo as main evidence for backward compatibility
+        setEvidence(photoUrls[0]?.imageUrl);
+      } else if (res.data.memory_photos && res.data.memory_photos.length > 0) {
+        console.log('📷 Memory photos found:', res.data.memory_photos.length);
+
+        // Handle memory photos with base64 data
+        const photos = res.data.memory_photos.map((photo, index) => ({
+          id: index + 1,
+          filename: photo.filename,
+          imageUrl: photo.base64_image,
+          memory_id: photo.memory_id
+        }));
+
+        setEvidencePhotos(photos);
+        setEvidence(photos[0]?.imageUrl);
+      } else {
+        console.log('❌ No evidence or memory photos found');
+        setEvidence(null);
+        setEvidencePhotos([]);
+      }
+
     } catch (err) {
       setError(err.response?.data?.error || "Failed to get the answer, try again...");
       console.error("Query error:", err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Component to display evidence photos gallery
+  const EvidenceGallery = ({ photos }) => {
+    if (!photos || photos.length === 0) {
+      return null;
+    }
+
+
+    return (
+      <div className="mt-4">
+        <h3 className="text-lg font-semibold text-white mb-3">
+          Evidence Photos ({photos.length})
+        </h3>
+
+        {/* Main display - show first photo large */}
+        <div className="mb-4">
+          <img
+            src={photos[0].imageUrl}
+            alt="Main evidence"
+            className="w-full max-h-64 object-contain rounded border border-gray-600"
+            onError={(e) => {
+              console.error('Failed to load main evidence image:', photos[0].imageUrl);
+              e.target.src = image; // Fallback to placeholder
+            }}
+          />
+        </div>
+
+        {/* Thumbnail gallery if multiple photos */}
+        {photos.length > 1 && (
+          <div className="grid grid-cols-4 gap-2">
+            {photos.map((photo, index) => (
+              <div
+                key={photo.id}
+                className="relative cursor-pointer"
+                onClick={() => setEvidence(photo.imageUrl)}
+              >
+                <img
+                  src={photo.imageUrl}
+                  alt={`Evidence ${index + 1}`}
+                  className="w-full h-16 object-cover rounded border border-gray-600 hover:border-blue-400 transition-colors"
+                  onError={(e) => {
+                    console.error(`Failed to load thumbnail ${index + 1}:`, photo.imageUrl);
+                    e.target.src = image;
+                  }}
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Modal for full-size viewing */}
+        {selectedPhoto && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedPhoto(null)}
+          >
+            <div className="relative max-w-4xl max-h-full">
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"
+              >
+                ×
+              </button>
+              <img
+                src={selectedPhoto.imageUrl}
+                alt="Full size evidence"
+                className="max-w-full max-h-full object-contain rounded"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -179,7 +293,7 @@ export default function Initialize() {
         {!error && initializationData && (
           <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded">
             <div className="flex items-center justify-between">
-              <span>{answer}</span>
+              <span>Initialization successful</span>
               {extractedFaces.length > 0 && (
                 <span className="text-sm font-medium">
                   {extractedFaces.length} faces found
@@ -253,6 +367,7 @@ export default function Initialize() {
               sizing="lg"
               className="bg-gray-200 border border-gray-300 rounded-md text-black text-lg w-full"
               disabled={isLoading}
+              value={query}
             />
             <Button
               onClick={handleQuery}
@@ -274,16 +389,24 @@ export default function Initialize() {
           />
         </div>
 
-        {/* Display Image */}
-        <div className="mt-4">
-          {evidence ? (
-            <img src={evidence} alt="Uploaded evidence" className="rounded" />
-          ) : (
-            <img src={image} alt="Placeholder" />
-          )}
-        </div>
+        {/* Evidence Photos Gallery */}
+        {evidencePhotos.length > 0 ? (
+          <EvidenceGallery photos={evidencePhotos} />
+        ) : (
+          /* Fallback single image display */
+          <div className="mt-4">
+            {evidence ? (
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Evidence</h3>
+                <img src={evidence} alt="Evidence" className="w-full rounded border border-gray-600" />
+              </div>
+            ) : (
+              <img src={image} alt="Placeholder" className="w-full rounded" />
+            )}
+          </div>
+        )}
 
-        {/* People Slide-In Panel - Pass extracted faces */}
+        {/* People Slide-In Panel */}
         <People
           showPanel={showPanel}
           setShowPanel={setShowPanel}
