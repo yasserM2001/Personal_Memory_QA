@@ -11,6 +11,7 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
   // Update faces when extractedFaces prop changes
   useEffect(() => {
     if (extractedFaces && extractedFaces.length > 0) {
+      console.log('🔄 Initial faces received:', extractedFaces.length);
       setFaces(extractedFaces);
       const names = {};
       extractedFaces.forEach((face, i) => {
@@ -26,6 +27,54 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // Helper function to update faces from backend response
+  const updateFacesFromResponse = (extractedFaces) => {
+    console.log('🔄 Updating faces from backend response:', extractedFaces?.length || 0);
+    
+    // Log the first few faces to see their structure
+    if (extractedFaces && extractedFaces.length > 0) {
+      console.log('📋 Sample faces received:', extractedFaces.slice(0, 3));
+      
+      // Check for duplicates by face_tag
+      const faceTagCounts = {};
+      extractedFaces.forEach(face => {
+        faceTagCounts[face.face_tag] = (faceTagCounts[face.face_tag] || 0) + 1;
+      });
+      
+      const duplicates = Object.entries(faceTagCounts).filter(([tag, count]) => count > 1);
+      if (duplicates.length > 0) {
+        console.warn('⚠️ Duplicate face tags detected:', duplicates);
+      }
+      
+      // Convert extracted_faces to the format expected by the frontend
+      const convertedFaces = extractedFaces.map((face, index) => ({
+        id: index + 1,
+        face_tag: face.face_tag,
+        filename: face.filename,
+        base64_image: face.base64_image,
+        imageUrl: face.imageUrl || `data:image/jpeg;base64,${face.base64_image?.replace(/^data:image\/\w+;base64,/, "") || ""}`,
+        total_faces_in_group: face.total_faces_in_group || 1
+      }));
+      
+      console.log('✅ Converted faces for display:', convertedFaces.length);
+      setFaces(convertedFaces);
+      
+      // Update names
+      const names = {};
+      convertedFaces.forEach((face, i) => {
+        names[i] = face.face_tag || `Person ${i + 1}`;
+      });
+      setPeopleNames(names);
+    } else {
+      console.log('🧹 No faces returned, clearing display');
+      setFaces([]);
+      setPeopleNames({});
+    }
+    
+    // Clear editing states
+    setIsEditing({});
+  };
 
   const handleNameChange = (index, name) => {
     setPeopleNames((prev) => ({
@@ -49,10 +98,17 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
 
     const oldTag = faces[index].face_tag;
     const newTag = peopleNames[index];
-    if (!newTag || newTag === oldTag) return;
+    if (!newTag || newTag === oldTag) {
+      console.log('❌ No change needed, names are the same');
+      return;
+    }
 
     setIsLoading(true);
+    setError('');
+    
     try {
+      console.log(`🔄 Changing face tag from "${oldTag}" to "${newTag}"`);
+      
       const res = await axios.post('/model/change_face_tag', {
         user_id: currentUser?._id,
         face_tag: oldTag,
@@ -60,18 +116,21 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
       });
 
       if (res.status === 200) {
-        const updatedFaces = [...faces];
-        updatedFaces[index].face_tag = newTag;
-        setFaces(updatedFaces);
-        console.log("Face tag updated successfully");
+        console.log('✅ Face tag updated successfully');
+        console.log('📊 Backend response:', res.data);
         setError('Face tag updated successfully');
+        
+        // Update faces from the backend response
+        if (res.data.extracted_faces) {
+          updateFacesFromResponse(res.data.extracted_faces);
+        }
       } else {
-        console.log("Failed to rename FaceTag");
+        console.log('❌ Failed to rename FaceTag');
         setError('Failed to rename FaceTag');
       }
     } catch (error) {
-      console.log("Error updating face tag:", error);
-      setError('Error updating face tag')
+      console.error('❌ Error updating face tag:', error);
+      setError(error.response?.data?.error || 'Error updating face tag');
     } finally {
       setIsLoading(false);
     }
@@ -81,31 +140,63 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
     const faceToDelete = faces[index];
     if (!faceToDelete) return;
 
+    const tagToDelete = faceToDelete.face_tag;
+    
+    // Show confirmation dialog
+    if (!window.confirm(`Are you sure you want to delete "${tagToDelete}"?`)) {
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
+    
     try {
+      console.log(`🗑️ Deleting face tag "${tagToDelete}"`);
+      
       const res = await axios.post('/model/delete_face_tag', {
         user_id: currentUser?._id,
-        face_tag: faceToDelete.face_tag,
+        face_tag: tagToDelete,
       });
 
       if (res.status === 200) {
-        const newFaces = faces.filter((_, i) => i !== index);
-        setFaces(newFaces);
-        const newNames = { ...peopleNames };
-        delete newNames[index];
-        setPeopleNames(newNames);
-        console.log("Face deleted successfully");
+        console.log('✅ Face deleted successfully');
+        console.log('📊 Backend response:', res.data);
         setError('Face deleted successfully');
+        
+        // Update faces from the backend response
+        if (res.data.extracted_faces !== undefined) {
+          updateFacesFromResponse(res.data.extracted_faces);
+        }
       } else {
-        console.log("Failed to delete face");
+        console.log('❌ Failed to delete face');
         setError('Failed to delete face');
       }
     } catch (error) {
-      console.log("Error deleting face:", error);
-      setError('Error deleting face');
+      console.error('❌ Error deleting face:', error);
+      setError(error.response?.data?.error || 'Error deleting face');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Debug function to analyze current faces
+  const analyzeFaces = () => {
+    console.log('🔍 Current faces analysis:');
+    console.log('Total faces:', faces.length);
+    
+    const tagCounts = {};
+    faces.forEach(face => {
+      tagCounts[face.face_tag] = (tagCounts[face.face_tag] || 0) + 1;
+    });
+    
+    console.log('Face tag distribution:', tagCounts);
+    
+    const duplicateTags = Object.entries(tagCounts).filter(([tag, count]) => count > 1);
+    if (duplicateTags.length > 0) {
+      console.warn('⚠️ Faces with duplicate tags:', duplicateTags);
+    }
+    
+    console.log('Sample faces:', faces.slice(0, 5));
   };
 
   const renderUserCircles = () => {
@@ -134,13 +225,19 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
         <div
           onClick={() => handleCircleClick(i)}
           className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center cursor-pointer relative border-2 border-gray-500 hover:border-purple-400 transition-colors overflow-hidden"
-          style={{
-            backgroundImage: face.imageUrl ? `url(${face.imageUrl})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
         >
-          {!face.imageUrl && (
+          {face.imageUrl ? (
+            <img
+              src={face.imageUrl}
+              alt={`Face ${i + 1}`}
+              className="w-full h-full object-cover rounded-full"
+              onError={(e) => {
+                console.error(`❌ Failed to load image: ${face.imageUrl}`);
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML += '<span class="text-white text-2xl">👤</span>';
+              }}
+            />
+          ) : (
             <span className="text-white text-2xl">👤</span>
           )}
         </div>
@@ -168,6 +265,13 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
             </span>
           )}
         </div>
+
+        {/* Face count badge - show if this represents multiple faces */}
+        {face.total_faces_in_group > 1 && (
+          <div className="mt-1 bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full">
+            {face.total_faces_in_group} faces
+          </div>
+        )}
       </div>
     ));
   };
@@ -188,9 +292,17 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
 
         <h2 className="text-xl font-bold mb-4 font-serif">Discover People</h2>
 
-        {extractedFaces.length > 0 ? (
+        {/* Debug button - remove in production */}
+        <button
+          onClick={analyzeFaces}
+          className="mb-2 bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs"
+        >
+          🔍 Debug Faces
+        </button>
+
+        {faces.length > 0 ? (
           <p className="text-sm text-gray-300 mb-4">
-            Found {extractedFaces.length} face(s) in your photos. Click on any face to give it a name.
+            Found {faces.length} unique person(s) in your photos. Click on any face to give it a name.
           </p>
         ) : (
           <p className="text-sm text-gray-300 mb-4">
@@ -200,7 +312,11 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
 
         {/* Status indicator */}
         {isLoading && (
-          <div className="mb-4 p-2 bg-blue-600 text-white rounded text-sm">
+          <div className="mb-4 p-2 bg-blue-600 text-white rounded text-sm flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
             Processing...
           </div>
         )}
@@ -216,7 +332,6 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
           {faces.length > 0 ? 'Click to name each person' : 'No faces detected'}
         </p>
 
-
         <div className="flex flex-wrap justify-center">
           {renderUserCircles()}
         </div>
@@ -229,6 +344,7 @@ export default function People({ showPanel, setShowPanel, extractedFaces = [], c
               <li>Click on a face to edit the name</li>
               <li>Press Enter or click outside to save</li>
               <li>Click the × button to delete a face</li>
+              <li>Changes are automatically synced</li>
             </ul>
           </div>
         )}

@@ -46,7 +46,6 @@ class Memory():
         """Change the face tag in the memory content."""
         if self.memory_content_processed is None:
             raise ValueError("Memory content is not processed yet.")
-            return False
         
         if self.preprocess_memory.face_processor is None:
             face_processor = FaceProcessor(directory=os.path.join(self.processed_folder, "extracted_faces"),
@@ -72,6 +71,7 @@ class Memory():
                 json.dump(self.augment_context.face_list, f, ensure_ascii=False, indent=4)
 
         print(f"Finished Updating {face_tag} to {new_face_tag}")
+        return True
         
     def delete_face_tag(self, face_tag: str):
         """Delete a face group and all associated references."""
