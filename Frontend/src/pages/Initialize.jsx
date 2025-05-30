@@ -156,7 +156,7 @@ export default function Initialize() {
         topk: 5
       });
 
-      setAnswer(res.data.answer);
+      setAnswer(res.data.response.answer);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to get the answer, try again...");
       console.error("Query error:", err);
