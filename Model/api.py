@@ -172,13 +172,46 @@ async def answer_query(payload: AnswerQueryRequest):
         result = query_handler.query_rag(query, topk=topk, llm="gemini")
     else:
         raise HTTPException(status_code=400, detail="Invalid query method. Use 'memory' or 'rag'.")
+    
+    print(f"Query: {query}, Method: {method}, Result: {result}")
+    # Extract memory photos if memory_ids are present
+    uploaded_folder = os.path.join(UPLOAD_FOLDER, user_id)
+    memory_photos = []
+    if result and "memory_ids" in result and result["memory_ids"]:
+        memory_photos = get_memory_photos(result["memory_ids"], uploaded_folder, memory)
+        # print(f"Memory photos extracted: {len(memory_photos)}")
+        # print(f"Memory photos: {memory_photos[0]['memory_id'] if memory_photos else 'No photos found'}")
 
     return {
         "user_id": user_id,
         "query": query,
         "method": method,
-        "response": result
+        "response": result,
+        "memory_photos": memory_photos
     }
+
+def get_memory_photos(memory_ids, user_folder, memory: Memory):
+    memory_photos = []
+    for memory_id in memory_ids:
+        ext = memory_id.split(".")[-1].lower()
+        # Check if the memory_id is a valid image file
+        if ext not in IMG_EXT_LIST or ext not in VIDEO_EXT_LIST:
+            for mem in memory.memory_content_processed:
+                if memory_id in mem.get("filename"):
+                    memory_file = os.path.join(user_folder, mem["filename"])
+                    break
+        else:
+            memory_file = os.path.join(user_folder, memory_id)
+
+        # if the memory file exists, read it and encode to base64
+        if os.path.exists(memory_file):
+            with open(memory_file, "rb") as f:
+                encoded_image = base64.b64encode(f.read()).decode("utf-8")
+                memory_photos.append({
+                    "memory_id": memory_id,
+                    "base64_image": encoded_image
+                })
+    return memory_photos
 
 @app.post("/change_face_tag")
 async def change_face_tag(payload: ChangeFaceTagRequest):
