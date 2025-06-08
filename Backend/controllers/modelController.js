@@ -32,7 +32,7 @@ const saveFacesToDisk = (faces, userId) => {
     const filePath = path.join(folderPath, face.filename);
     const base64Data = face.base64_image.replace(/^data:image\/\w+;base64,/, "");
     fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
-    const relativePath = path.join('saved_faces', userId, face.filename);
+    const relativePath = path.join(folderPath, face.filename);
     savedPaths.push(relativePath);
   });
 
