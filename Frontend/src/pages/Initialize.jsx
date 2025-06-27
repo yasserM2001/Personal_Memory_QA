@@ -135,6 +135,11 @@ export default function Initialize() {
       return;
     }
 
+    if (!method || method === '') {
+      setError("Please select a model method");
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setEvidencePhotos([]); // Clear previous evidence
@@ -143,7 +148,7 @@ export default function Initialize() {
       const res = await axios.post('/model/query', {
         user_id: currentUser._id,
         query,
-        method: method || '',
+        method: method,
         detect_faces: DETECT_FACES,
         topk: 5
       });
